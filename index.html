@@ -334,6 +334,10 @@ td:first-child,th:first-child{text-align:left}
             </div>
             <div class="note">Distance and position are estimated from motor time (no wheel encoders). Wheels on the ground: run a test, measure the real cm or degrees, enter it, press Apply.</div>
           </div>
+          <div class="box" style="grid-column:1/-1">
+            <h4>Bluetooth log (newest first)</h4>
+            <pre id="blog" style="margin:0;max-height:140px;overflow:auto;font:11px/1.35 ui-monospace,Consolas,monospace;color:var(--tx2);white-space:pre-wrap;-webkit-user-select:text;user-select:text">(empty)</pre>
+          </div>
         </div>
       </div>
 
@@ -378,10 +382,19 @@ const odo={x:0,y:0,th:0,dist:0,path:[{x:0,y:0}]};
 const S={conn:false,level:7,gear:'P',accel:false,brake:false,wsteer:0,sig:0,hz:false,head:2,rec:false,
   T:NaN,H:NaN,L:NaN,lastData:0,layer:'P',tab:'Drive',speed:0,cur:null};
 const kd=new Set();
-let force=null, lastCmd=null;
+let force=null, lastCmd=null, lastSent=0;
 
 /* ---------------- bluetooth ---------------- */
 let device=null, chr=null, rxBuf='', q=Promise.resolve(), busy=0, retry=0;
+/* on-screen Bluetooth log (Data tab) so phone problems are visible */
+const blog=[], t0=Date.now();
+function log(m){
+  const s=((Date.now()-t0)/1000).toFixed(1).padStart(6)+'s  '+m;
+  blog.push(s); if(blog.length>60) blog.shift();
+  const el=document.getElementById('blog'); if(el) el.textContent=blog.slice().reverse().join('\n');
+}
+const emsg=e=>(e&&(e.name?e.name+': ':'')+(e.message||''))||String(e);
+let wMode='auto', nWr=0, nErr=0;   // 'auto' tries write-without-response first, 'r' = write with response
 function setStatus(t,on){$('#status').textContent=t;$('#gStatus').textContent=t;if(on)$('#gate').style.display='none';$('#bt').classList.toggle('on',!!on);S.conn=!!on;$('#conn').textContent=on?'Disconnect':'Connect'}
 if(!navigator.bluetooth) setStatus('No Web Bluetooth here: open in Bluefy',false); else { $('#status').textContent='Ready: tap Connect'; $('#gStatus').textContent='Bluetooth OK. Tap Connect and pick HM-10.'; }
 
@@ -389,9 +402,12 @@ async function attach(dev){
   const srv=await dev.gatt.connect();
   const svc=await srv.getPrimaryService('0000ffe0-0000-1000-8000-00805f9b34fb');
   chr=await svc.getCharacteristic('0000ffe1-0000-1000-8000-00805f9b34fb');
+  const pr=chr.properties||{};
+  log('char FFE1: write='+!!pr.write+' writeNoResp='+!!pr.writeWithoutResponse+' notify='+!!pr.notify);
+  if(pr.write && !pr.writeWithoutResponse) wMode='r';
   await chr.startNotifications();
   chr.addEventListener('characteristicvaluechanged',onRx);
-  retry=0; setStatus('Connected: '+(dev.name||'HM-10'),true);
+  retry=0; setStatus('Connected: '+(dev.name||'HM-10'),true); log('connected to '+(dev.name||'?')+', write mode '+wMode);
   try{ if(navigator.wakeLock) navigator.wakeLock.request('screen').catch(()=>{}); }catch(e){}
   tx(String(S.level)); line('H'+S.head); line('Z'+(S.hz?1:0)); line('Y'+S.sig);
 }
@@ -402,9 +418,10 @@ async function connect(){
     device=await navigator.bluetooth.requestDevice({acceptAllDevices:true,optionalServices:['0000ffe0-0000-1000-8000-00805f9b34fb']});
     device.addEventListener('gattserverdisconnected',onDrop);
     await attach(device);
-  }catch(e){ setStatus(e&&e.name==='NotFoundError'?'Not connected':'Error: '+(e.message||e),false); }
+  }catch(e){ log('connect failed: '+emsg(e)); setStatus(e&&e.name==='NotFoundError'?'Not connected':'Error: '+(e.message||e),false); }
 }
 function onDrop(){
+  log('DISCONNECTED (writes ok '+nWr+', failed '+nErr+', last cmd '+(lastCmd||'-')+')');
   chr=null; setStatus('Connection lost',false);
   if(device && retry<4){ retry++; setTimeout(async()=>{ try{ await attach(device); }catch(e){ onDrop(); } },1500); }
 }
@@ -413,7 +430,16 @@ $('#gBtn').onclick=()=>{ retry=0; connect(); };
 $('#gSkip').onclick=()=>{ $('#gate').style.display='none'; };
 $('#conn').onclick=()=>{ if(S.conn) disconnect(); else { retry=0; connect(); } };
 
-async function wr(bytes){ if(chr.writeValueWithoutResponse) await chr.writeValueWithoutResponse(bytes); else await chr.writeValue(bytes); }
+/* Some phones/browsers (Bluefy on iOS) or HM-10 clones reject write-without-response.
+   Try it once; if it fails, switch to normal writes for the rest of the session. */
+async function wr(bytes){
+  const c=chr; if(!c) throw new Error('not connected');
+  if(wMode!=='r' && c.writeValueWithoutResponse){
+    try{ await c.writeValueWithoutResponse(bytes); return; }
+    catch(e){ log('write-no-response failed ('+emsg(e)+') -> using normal write'); wMode='r'; }
+  }
+  if(c.writeValue) await c.writeValue(bytes); else await c.writeValueWithResponse(bytes);
+}
 function tx(str,droppable){
   if(!chr) return;
   if(droppable && busy>0) return;
@@ -421,7 +447,11 @@ function tx(str,droppable){
   q=q.then(async()=>{
     const b=new TextEncoder().encode(str);
     for(let i=0;i<b.length;i+=20){ await wr(b.slice(i,i+20)); if(i+20<b.length) await sleep(30); }
-  }).catch(()=>{}).then(()=>{busy--});
+    nWr++;
+  }).catch(e=>{
+    nErr++; log('send "'+str.trim()+'" failed: '+emsg(e));
+    $('#status').textContent='Send failed: '+emsg(e);
+  }).then(()=>{busy--});
 }
 function line(s){ tx(s+'\n'); }
 function onRx(e){
@@ -432,7 +462,8 @@ function onRx(e){
 }
 function parse(l){
   const m=/^T(-?\d+(?:\.\d+)?)\s+H(\d+)\s+L(\d+)/.exec(l);
-  if(!m) return;
+  if(!m){ if(l) log('rover says: '+l.slice(0,40)); return; }
+  if(!S.lastData) log('first sensor reading received');
   S.T=parseFloat(m[1]); S.H=parseInt(m[2],10); S.L=Math.round(parseInt(m[3],10)/1023*100);
   S.lastData=Date.now();
   streamSample();
@@ -513,9 +544,11 @@ function tick(){
   const now=performance.now(), dt=Math.min((now-lastTick)/1000,0.5); lastTick=now;
   let cmd=wanted();
   if(force){ if(now<force.until) cmd=force.cmd; else endForce(); }
+  if(cmd!==lastCmd) log('control: '+(cmd||'stop')+(S.conn?'':' (not connected, not sent)'));
   if(S.conn){
-    if(cmd) tx(cmd,true);
-    else if(lastCmd && lastCmd!=='x'){ tx('x'); setTimeout(()=>tx('x'),70); }
+    // send on change, then repeat every 250 ms as keep-alive (firmware stops after 400 ms of silence)
+    if(cmd){ if(cmd!==lastCmd || now-lastSent>250){ tx(cmd,cmd===lastCmd); lastSent=now; } }
+    else if(lastCmd && lastCmd!=='x'){ tx('x'); setTimeout(()=>tx('x'),120); }
   }
   lastCmd=cmd; S.cur=S.conn?cmd:null;
   S.speed=(S.conn && cmd && MUL[cmd])?integrate(MUL[cmd],dt):0;
