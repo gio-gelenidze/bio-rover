@@ -52,27 +52,22 @@ header{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8p
 
 /* main */
 main{flex:1;min-height:0;display:grid;grid-template-columns:minmax(140px,22%) 1fr minmax(140px,24%);gap:8px;padding:8px}
-/* speed on the left, joystick on the right */
-#right{order:1} #center{order:2} #left{order:3}
 .panel{background:var(--s1);border:1px solid var(--ln);border-radius:14px;min-height:0;overflow:hidden}
 
-/* left: joystick */
-#left{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:6px;touch-action:none}
-.joy{position:relative;width:100%;max-width:100%;max-height:calc(100% - 20px);aspect-ratio:1;touch-action:none;-webkit-touch-callout:none;border-radius:50%}
-.joyBg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
-.joyBg .jr{fill:var(--s2);stroke:var(--ln);stroke-width:2}
-.joyBg .jd{fill:none;stroke:var(--ln);stroke-width:1.5;stroke-dasharray:3 4}
-.joyBg .ja{fill:var(--tx3)}
-.joy.on .jr{stroke:var(--ac)}
-.knob{position:absolute;left:50%;top:50%;width:42%;height:42%;margin:-21% 0 0 -21%;border-radius:50%;background:radial-gradient(circle at 35% 30%,#3a434d,#1d2228 70%);border:2px solid #4a5560;box-shadow:0 4px 14px #000a;pointer-events:none;transition:transform .15s cubic-bezier(.2,.8,.2,1)}
-.joy.on .knob{transition:none;border-color:var(--ac)}
-.joyLbl{font-size:11px;color:var(--tx2);height:16px;font-weight:600;letter-spacing:.06em}
+/* arrow buttons: left panel = ◀ ▶ (+ speed), right panel = ▲ ▼ */
+#left,#right{touch-action:none}
+.arrows{flex:1;min-height:0;display:grid;gap:8px}
+.arrows.lr{grid-template-columns:1fr 1fr}
+.arrows.ud{grid-template-rows:1fr 1fr}
+.ak{border:1px solid var(--ln);background:var(--s2);border-radius:16px;color:var(--tx2);display:flex;align-items:center;justify-content:center;touch-action:none;-webkit-touch-callout:none;min-width:0;min-height:0;padding:0}
+.ak svg{width:46%;max-width:64px;height:46%;max-height:64px;fill:currentColor}
+.ak.on{background:var(--tx);border-color:var(--tx);color:#0b0d10}
 
-/* right: speed */
-#right{display:flex;flex-direction:column;gap:10px;padding:10px;justify-content:center}
-.spd{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px}
-.spd b{font-size:40px;font-weight:600;min-width:1.2ch;text-align:center}
-.sk{height:56px;border:1px solid var(--ln);background:var(--s2);border-radius:14px;font-size:28px;font-weight:600;color:var(--tx)}
+/* speed (top of left panel) */
+#left,#right{display:flex;flex-direction:column;gap:8px;padding:8px}
+.spd{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:6px;flex:none}
+.spd b{font-size:28px;font-weight:600;min-width:1.2ch;text-align:center}
+.sk{height:40px;border:1px solid var(--ln);background:var(--s2);border-radius:12px;font-size:24px;font-weight:600;color:var(--tx)}
 .sk:active{background:var(--s3)}
 .spbar{display:grid;grid-template-columns:repeat(9,1fr);gap:3px}
 .spbar i{height:6px;border-radius:2px;background:var(--ln)}
@@ -243,15 +238,16 @@ td:first-child,th:first-child{text-align:left}
 
   <main>
     <section class="panel" id="left">
-      <div class="joy" id="joy" aria-label="Joystick">
-        <svg viewBox="-100 -100 200 200" class="joyBg" aria-hidden="true">
-          <circle r="96" class="jr"/><circle r="40" class="jd"/>
-          <path class="ja" d="M0 -86 l9 12 h-18z"/><path class="ja" d="M0 86 l9 -12 h-18z"/>
-          <path class="ja" d="M-86 0 l12 9 v-18z"/><path class="ja" d="M86 0 l-12 9 v-18z"/>
-        </svg>
-        <div class="knob" id="knob"></div>
+      <div class="spd">
+        <button class="sk" id="spDn" aria-label="Slower">−</button>
+        <b id="spV">7</b>
+        <button class="sk" id="spUp" aria-label="Faster">+</button>
       </div>
-      <div class="joyLbl" id="joyLbl">drag to drive</div>
+      <div class="spbar" id="spBar"></div>
+      <div class="arrows lr">
+        <button class="ak" data-k="l" aria-label="Left"><svg viewBox="0 0 24 24"><path d="M6 12l11-8v16z"/></svg></button>
+        <button class="ak" data-k="r" aria-label="Right"><svg viewBox="0 0 24 24"><path d="M18 12L7 20V4z"/></svg></button>
+      </div>
     </section>
 
     <section class="panel" id="center">
@@ -389,17 +385,9 @@ td:first-child,th:first-child{text-align:left}
     </section>
 
     <section class="panel" id="right">
-      <div class="lbl">Speed</div>
-      <div class="spd">
-        <button class="sk" id="spDn" aria-label="Slower">−</button>
-        <b id="spV">7</b>
-        <button class="sk" id="spUp" aria-label="Faster">+</button>
-      </div>
-      <div class="spbar" id="spBar"></div>
-      <div class="presets">
-        <button class="btn" data-sp="3">Slow</button>
-        <button class="btn" data-sp="6">Mid</button>
-        <button class="btn" data-sp="9">Fast</button>
+      <div class="arrows ud">
+        <button class="ak" data-k="u" aria-label="Forward"><svg viewBox="0 0 24 24"><path d="M12 5l8 11H4z"/></svg></button>
+        <button class="ak" data-k="d" aria-label="Back"><svg viewBox="0 0 24 24"><path d="M12 19L4 8h16z"/></svg></button>
       </div>
     </section>
   </main>
@@ -513,40 +501,24 @@ function parse(l){
   render();
 }
 
-/* ---------------- joystick ----------------
-   Fixed centre. Finger direction picks one of 8 moves:
-   up = forward, up-right = forward curve right, right = spin right, down-right = reverse curve right, ...
-   Inside the dashed ring (dead zone) = stop. Let go = stop.  */
+/* ---------------- arrow buttons (hold to move) ----------------
+   Right thumb: ▲ forward / ▼ back.  Left thumb: ◀ / ▶ steer.
+   ▲ + ◀ = curve left, ▲ alone = straight, ◀ alone = spin in place. Lift = stop. */
 function setGear(g){ S.gear=g; $$('#gearrow span').forEach(s=>s.classList.toggle('on',s.dataset.g===g)); }
-const joy=$('#joy'), knob=$('#knob');
-const JOY_NAMES={w:'forward',e:'forward + right',d:'spin right',c:'reverse + right',s:'reverse',z:'reverse + left',a:'spin left',q:'forward + left'};
-const SECT=['w','e','d','c','s','z','a','q'];   // clockwise from straight up, 45° each
-let joyId=null, joyCmd=null;
-function joyAt(cx,cy){
-  const r=joy.getBoundingClientRect(), R=r.width/2;
-  let dx=cx-(r.left+R), dy=cy-(r.top+R);
-  const d=Math.hypot(dx,dy), k=d>R*.58?R*.58/d:1;          // knob travel limit
-  knob.style.transform='translate('+(dx*k)+'px,'+(dy*k)+'px)';
-  if(d<R*.2){ joyCmd=null; }                                 // dead zone
-  else{ const a=(Math.atan2(dx,-dy)*180/Math.PI+360+22.5)%360; joyCmd=SECT[Math.floor(a/45)]; }
-  $('#joyLbl').textContent=joyCmd?JOY_NAMES[joyCmd]:'stop';
-}
-function joyEnd(e){
-  if(e && e.pointerId!==joyId) return;
-  joyId=null; joyCmd=null; joy.classList.remove('on'); knob.style.transform=''; $('#joyLbl').textContent='drag to drive';
-}
-joy.addEventListener('pointerdown',e=>{
-  if(joyId!==null) return;
-  joyId=e.pointerId; try{joy.setPointerCapture(e.pointerId)}catch(_){}
-  joy.classList.add('on'); joyAt(e.clientX,e.clientY); e.preventDefault();
+const pad=new Set();
+const akeys=$$('.ak[data-k]');
+function padClear(){ pad.clear(); akeys.forEach(b=>{ b.classList.remove('on'); b._ids&&b._ids.clear(); }); }
+akeys.forEach(el=>{
+  const k=el.dataset.k; el._ids=new Set();
+  el.addEventListener('pointerdown',e=>{ el._ids.add(e.pointerId); try{el.setPointerCapture(e.pointerId)}catch(_){}; pad.add(k); el.classList.add('on'); e.preventDefault(); });
+  const up=e=>{ el._ids.delete(e.pointerId); if(!el._ids.size){ pad.delete(k); el.classList.remove('on'); } };
+  ['pointerup','pointercancel','lostpointercapture'].forEach(t=>el.addEventListener(t,up));
+  el.addEventListener('contextmenu',e=>e.preventDefault());
+  // iOS: a held finger must never turn into a scroll, zoom, magnifier or text selection
+  ['touchstart','touchmove'].forEach(t=>el.addEventListener(t,e=>e.preventDefault(),{passive:false}));
 });
-joy.addEventListener('pointermove',e=>{ if(e.pointerId===joyId){ joyAt(e.clientX,e.clientY); e.preventDefault(); } });
-['pointerup','pointercancel','lostpointercapture'].forEach(t=>joy.addEventListener(t,joyEnd));
-joy.addEventListener('contextmenu',e=>e.preventDefault());
-// iOS: a finger on the joystick must never become a scroll / zoom / text selection
-['touchstart','touchmove'].forEach(t=>joy.addEventListener(t,e=>e.preventDefault(),{passive:false}));
-window.addEventListener('blur',()=>joyEnd());
-document.addEventListener('visibilitychange',()=>{ if(document.hidden) joyEnd(); });
+window.addEventListener('blur',padClear);
+document.addEventListener('visibilitychange',()=>{ if(document.hidden) padClear(); });
 
 /* ---------------- speed ---------------- */
 const spBar=$('#spBar'); for(let i=1;i<=9;i++){ const s=document.createElement('i'); spBar.appendChild(s); }
@@ -572,9 +544,8 @@ addEventListener('blur',()=>kd.clear());
 function wanted(){
   const k=x=>kd.has(x);
   if(S.brake||k(' ')){ setGear('P'); return 'x'; }
-  if(joyCmd){ setGear('wqe'.includes(joyCmd)?'D':'szc'.includes(joyCmd)?'R':'N'); return joyCmd; }
-  const up=k('w')||k('arrowup'), dn=k('s')||k('arrowdown');
-  const lf=k('a')||k('arrowleft'), rt=k('d')||k('arrowright');
+  const up=pad.has('u')||k('w')||k('arrowup'), dn=pad.has('d')||k('s')||k('arrowdown');
+  const lf=pad.has('l')||k('a')||k('arrowleft'), rt=pad.has('r')||k('d')||k('arrowright');
   const dir=up&&!dn?1:dn&&!up?-1:0, st=lf&&!rt?-1:rt&&!lf?1:0;
   setGear(dir>0?'D':dir<0?'R':st?'N':'P');
   if(dir>0) return st<0?'q':st>0?'e':'w';
@@ -818,7 +789,7 @@ let tapS=null, swallow=null;
 document.addEventListener('pointerdown',e=>{
   if(e.pointerType==='mouse') return;
   const b=e.target.closest&&e.target.closest('button,.tile');
-  tapS=(b && !b.disabled && !b.closest('#joy'))?{b,id:e.pointerId,x:e.clientX,y:e.clientY}:null;
+  tapS=(b && !b.disabled && !b.classList.contains('ak'))?{b,id:e.pointerId,x:e.clientX,y:e.clientY}:null;
 },true);
 document.addEventListener('pointerup',e=>{
   const s=tapS; tapS=null;
