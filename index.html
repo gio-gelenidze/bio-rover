@@ -137,11 +137,6 @@ main{flex:1;min-height:0;display:grid;grid-template-columns:minmax(120px,21%) 1f
 .legend{display:flex;align-items:center;gap:6px;color:var(--tx2);font-size:11px}
 .legend .g{height:5px;width:90px;border-radius:3px;background:linear-gradient(90deg,hsl(240 80% 55%),hsl(180 80% 50%),hsl(120 80% 50%),hsl(60 85% 55%),hsl(0 85% 55%))}
 #mapInfo{font-size:11.5px;min-height:15px;color:var(--tx)}
-.live{display:inline-flex;align-items:center;gap:6px;font-size:10px;letter-spacing:.14em;font-weight:700;color:var(--tx2)}
-.live .dot{width:8px;height:8px;border-radius:50%;background:#4a5560}
-.live.on{color:#ff5a4f}.live.on .dot{background:#ff5a4f;animation:lp 1.2s infinite}
-@keyframes lp{50%{opacity:.25}}
-#liveNow{font-size:11.5px;color:var(--tx)}
 
 /* face / data */
 .cols{display:grid;grid-template-columns:1.1fr 1fr 1.2fr;gap:8px}
@@ -168,6 +163,13 @@ td:first-child,th:first-child{text-align:left}
 .set{display:grid;grid-template-columns:auto 1fr;gap:5px 8px;align-items:center}
 .set input,#calIn{background:#0a0d10;border:1px solid var(--ln);border-radius:6px;padding:5px 6px;width:100%}
 .note{color:var(--tx2);font-size:11px;margin-top:6px}
+
+#gate{position:fixed;inset:0;z-index:99;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:20px;text-align:center}
+#gate .brand{font-size:14px}
+#gBtn{width:min(320px,80vw);height:64px;border-radius:16px;border:0;background:var(--tx);color:#0b0d10;font-size:20px;font-weight:700;letter-spacing:.04em}
+#gBtn:active{transform:scale(.98)}
+#gStatus{color:var(--tx2);font-size:13px;min-height:34px;max-width:90vw;word-break:break-word}
+#gSkip{background:none;border:0;color:var(--tx3);text-decoration:underline;font-size:12px;padding:8px}
 </style>
 </head>
 <body>
@@ -258,13 +260,17 @@ td:first-child,th:first-child{text-align:left}
 
       <div class="pane" id="paneMap">
         <div class="chips" id="layers">
-          <span class="live" id="liveTag"><span class="dot"></span>LIVE TRACE</span>
-          <span class="lbl" id="liveNow">waiting for sensor data…</span>
+          <button class="chip on" data-l="P">Path</button>
+          <button class="chip" data-l="T">Temp</button>
+          <button class="chip" data-l="H">Humidity</button>
+          <button class="chip" data-l="L">Light</button>
           <span class="sp"></span>
+          <span class="legend" id="legend" style="display:none"><span id="lgMin"></span><span class="g"></span><span id="lgMax"></span></span>
+          <button class="chip" id="mark">+ Mark</button>
           <button class="chip" id="home">Reset origin</button>
         </div>
         <canvas id="map"></canvas>
-        <div id="mapInfo">Every reading is dropped on the trace automatically. Tap or hover a point to see temperature, humidity and light there.</div>
+        <div id="mapInfo">Tap a dot to see its values. Forward of the start = up.</div>
       </div>
 
       <div class="pane" id="paneFace">
@@ -351,7 +357,10 @@ td:first-child,th:first-child{text-align:left}
   </main>
 </div>
 
+<div id="gate"><div class="brand">BIOME ROVER</div><button id="gBtn">Connect to rover</button><div id="gStatus">Ready</div><button id="gSkip">Skip (view only)</button></div>
 <script>
+window.addEventListener('error',e=>{['status','gStatus'].forEach(i=>{const el=document.getElementById(i);if(el)el.textContent='JS error: '+e.message+' L'+e.lineno})});
+window.addEventListener('unhandledrejection',e=>{['status','gStatus'].forEach(i=>{const el=document.getElementById(i);if(el)el.textContent='Error: '+((e.reason&&e.reason.message)||e.reason)})});
 (()=>{
 'use strict';
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
@@ -372,13 +381,13 @@ let force=null, lastCmd=null;
 
 /* ---------------- bluetooth ---------------- */
 let device=null, chr=null, rxBuf='', q=Promise.resolve(), busy=0, retry=0;
-function setStatus(t,on){$('#status').textContent=t;$('#bt').classList.toggle('on',!!on);S.conn=!!on;$('#conn').textContent=on?'Disconnect':'Connect'}
-if(!navigator.bluetooth) setStatus('Use Chrome (Android/PC) or Bluefy (iPhone)',false);
+function setStatus(t,on){$('#status').textContent=t;$('#gStatus').textContent=t;if(on)$('#gate').style.display='none';$('#bt').classList.toggle('on',!!on);S.conn=!!on;$('#conn').textContent=on?'Disconnect':'Connect'}
+if(!navigator.bluetooth) setStatus('No Web Bluetooth here: open in Bluefy',false); else { $('#status').textContent='Ready: tap Connect'; $('#gStatus').textContent='Bluetooth OK. Tap Connect and pick HM-10.'; }
 
 async function attach(dev){
   const srv=await dev.gatt.connect();
-  const svc=await srv.getPrimaryService(0xFFE0);
-  chr=await svc.getCharacteristic(0xFFE1);
+  const svc=await srv.getPrimaryService('0000ffe0-0000-1000-8000-00805f9b34fb');
+  chr=await svc.getCharacteristic('0000ffe1-0000-1000-8000-00805f9b34fb');
   await chr.startNotifications();
   chr.addEventListener('characteristicvaluechanged',onRx);
   retry=0; setStatus('Connected: '+(dev.name||'HM-10'),true);
@@ -386,9 +395,10 @@ async function attach(dev){
   tx(String(S.level)); line('H'+S.head); line('Z'+(S.hz?1:0)); line('Y'+S.sig);
 }
 async function connect(){
+  if(!navigator.bluetooth){ setStatus('No Web Bluetooth here: open in Bluefy',false); return; }
   try{
     setStatus('Choose the HM-10...',false);
-    device=await navigator.bluetooth.requestDevice({acceptAllDevices:true,optionalServices:[0xFFE0]});
+    device=await navigator.bluetooth.requestDevice({acceptAllDevices:true,optionalServices:['0000ffe0-0000-1000-8000-00805f9b34fb']});
     device.addEventListener('gattserverdisconnected',onDrop);
     await attach(device);
   }catch(e){ setStatus(e&&e.name==='NotFoundError'?'Not connected':'Error: '+(e.message||e),false); }
@@ -398,6 +408,8 @@ function onDrop(){
   if(device && retry<4){ retry++; setTimeout(async()=>{ try{ await attach(device); }catch(e){ onDrop(); } },1500); }
 }
 function disconnect(){ retry=99; try{ if(device&&device.gatt.connected) device.gatt.disconnect(); }catch(e){} chr=null; setStatus('Disconnected',false); }
+$('#gBtn').onclick=()=>{ retry=0; connect(); };
+$('#gSkip').onclick=()=>{ $('#gate').style.display='none'; };
 $('#conn').onclick=()=>{ if(S.conn) disconnect(); else { retry=0; connect(); } };
 
 async function wr(bytes){ if(chr.writeValueWithoutResponse) await chr.writeValueWithoutResponse(bytes); else await chr.writeValue(bytes); }
@@ -422,7 +434,7 @@ function parse(l){
   if(!m) return;
   S.T=parseFloat(m[1]); S.H=parseInt(m[2],10); S.L=Math.round(parseInt(m[3],10)/1023*100);
   S.lastData=Date.now();
-  streamSample();
+  if(S.rec) addSample('');
   render();
 }
 
@@ -560,35 +572,16 @@ function render(){
 }
 
 /* ---------------- samples / record ---------------- */
-let persistT=null;
-function persist(now){
-  if(now){ clearTimeout(persistT); persistT=null; store.set('biome_samples',samples); return; }
-  if(!persistT) persistT=setTimeout(()=>{persistT=null; store.set('biome_samples',samples);},2000);
-}
+function persist(){ store.set('biome_samples',samples); }
 function addSample(label){
   samples.push({t:Date.now(),x:+odo.x.toFixed(1),y:+odo.y.toFixed(1),th:+odo.th.toFixed(3),T:S.T,H:S.H,L:S.L,label:label||''});
-  if(samples.length>20000) samples.splice(0,samples.length-20000);
-  persist(); if(S.tab==='Data') renderData();
+  persist(); renderData();
 }
-/* every sensor reading is streamed onto the trace; skip exact duplicates
-   (rover parked and values unchanged) so storage doesn't fill up */
-function streamSample(){
-  if(!S.rec) return;
-  const p=samples[samples.length-1];
-  if(p && Math.hypot(odo.x-p.x,odo.y-p.y)<1 && p.T===S.T && p.H===S.H && p.L===S.L && Date.now()-p.t<10000) return;
-  addSample('');
-}
-window.addEventListener('beforeunload',()=>persist(true));
-S.rec=true;
 const rec=$('#rec');
-function renderRec(){
-  rec.classList.toggle('on',S.rec); rec.textContent=S.rec?'LIVE '+samples.length:'PAUSED';
-  const live=S.rec&&S.lastData&&Date.now()-S.lastData<5000;
-  $('#liveTag').classList.toggle('on',!!live);
-  $('#liveNow').textContent=S.lastData?('now: '+f1(S.T)+' °C · RH '+(Number.isFinite(S.H)?S.H:'--')+' % · light '+(Number.isFinite(S.L)?S.L:'--')+' %'+(S.rec?'':' (paused)')):'waiting for sensor data…';
-}
+function renderRec(){ rec.classList.toggle('on',S.rec); rec.textContent=S.rec?'REC '+samples.length:'REC'; }
 rec.onclick=()=>{S.rec=!S.rec;renderRec();};
 setInterval(renderRec,1000);
+$('#mark').onclick=()=>{ const n=prompt('Station name:','Station '+(samples.filter(s=>s.label).length+1)); if(n!==null) addSample(n||'mark'); };
 $('#home').onclick=()=>{ odo.x=odo.y=odo.th=odo.dist=0; odo.path=[{x:0,y:0}]; };
 $('#odoReset').onclick=$('#home').onclick;
 function renderData(){
@@ -602,7 +595,7 @@ $('#csv').onclick=()=>{
   const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([rows.join('\n')],{type:'text/csv'}));
   a.download='biome-rover-'+new Date().toISOString().slice(0,16).replace(/[:T]/g,'-')+'.csv'; document.body.appendChild(a); a.click(); a.remove();
 };
-$('#clr').onclick=()=>{ if(confirm('Delete all '+samples.length+' samples?')){ samples=[]; persist(true); renderData(); } };
+$('#clr').onclick=()=>{ if(confirm('Delete all '+samples.length+' samples?')){ samples=[]; persist(); renderData(); } };
 
 /* ---------------- calibration ---------------- */
 const kV=$('#kV'),kW=$('#kW'),kK=$('#kK');
@@ -633,13 +626,9 @@ $('#calOk').onclick=()=>{
 
 /* ---------------- map ---------------- */
 const mc=$('#map');
-let hit=[], hov=null;
-const fv=v=>Number.isFinite(v)?v:'--';
-function tipLines(s){
-  return [new Date(s.t).toLocaleTimeString(),
-    'Temp      '+f1(s.T)+' °C','Humidity  '+fv(s.H)+' %','Light     '+fv(s.L)+' %',
-    '('+s.x.toFixed(0)+', '+s.y.toFixed(0)+') cm'];
-}
+function col(t){ return 'hsl('+(240-240*clamp(t,0,1))+' 80% 55%)'; }
+function val(s){ return S.layer==='T'?s.T:S.layer==='H'?s.H:s.L; }
+let hit=[];
 function drawMap(){
   const dpr=window.devicePixelRatio||1, W=mc.clientWidth, H=mc.clientHeight; if(!W||!H) return;
   if(mc.width!==Math.round(W*dpr)||mc.height!==Math.round(H*dpr)){ mc.width=Math.round(W*dpr); mc.height=Math.round(H*dpr); }
@@ -655,44 +644,29 @@ function drawMap(){
   for(let gx=Math.floor((cx-W/2/sc)/step)*step; gx<=cx+W/2/sc; gx+=step){ c.moveTo(X(gx),0); c.lineTo(X(gx),H); }
   for(let gy=Math.floor((cy-H/2/sc)/step)*step; gy<=cy+H/2/sc; gy+=step){ c.moveTo(0,Y(gy)); c.lineTo(W,Y(gy)); }
   c.stroke(); c.fillText(step+' cm',6,H-6);
-  c.lineJoin='round'; c.lineCap='round';
-  // live odometry path (where the rover actually drove)
-  c.strokeStyle='rgba(61,160,255,.35)'; c.lineWidth=2; c.beginPath();
+  c.strokeStyle='#3da0ff'; c.lineWidth=3; c.lineJoin='round'; c.lineCap='round'; c.beginPath();
   odo.path.forEach((p,i)=>i?c.lineTo(X(p.x),Y(p.y)):c.moveTo(X(p.x),Y(p.y))); c.stroke();
-  // stored trace through every streamed reading
-  c.strokeStyle='#3da0ff'; c.lineWidth=3; c.beginPath();
-  samples.forEach((s,i)=>i?c.lineTo(X(s.x),Y(s.y)):c.moveTo(X(s.x),Y(s.y))); c.stroke();
   c.fillStyle='#eef2f6'; c.beginPath(); c.arc(X(0),Y(0),4,0,7); c.fill(); c.fillStyle='#8f9aa8'; c.fillText('start',X(0)+7,Y(0)-6);
-  // reading points (thinned on screen when they overlap; all are kept in storage)
-  hit=[]; let lx=-1e9, ly=-1e9;
-  c.fillStyle='#eef2f6'; c.strokeStyle='#0a0d10'; c.lineWidth=1.5;
-  samples.forEach((s,i)=>{
-    const px=X(s.x), py=Y(s.y), last=i===samples.length-1;
-    if(!last && Math.hypot(px-lx,py-ly)<6) return;
-    lx=px; ly=py; c.beginPath(); c.arc(px,py,3.5,0,7); c.fill(); c.stroke(); hit.push({px,py,s});
+  hit=[]; let mn=Infinity,mx=-Infinity;
+  if(S.layer!=='P') samples.forEach(s=>{const v=val(s); if(Number.isFinite(v)){mn=Math.min(mn,v);mx=Math.max(mx,v)}});
+  samples.forEach(s=>{
+    const px=X(s.x), py=Y(s.y); let fill='#eef2f6';
+    if(S.layer!=='P'){ const v=val(s); fill=Number.isFinite(v)?col(mx>mn?(v-mn)/(mx-mn):.5):'#555'; }
+    c.fillStyle=fill; c.strokeStyle='#0a0d10'; c.lineWidth=1.5; c.beginPath(); c.arc(px,py,s.label?7:5,0,7); c.fill(); c.stroke();
+    if(s.label){ c.fillStyle='#eef2f6'; c.font='11px system-ui'; c.fillText(s.label,px+9,py-7); }
+    hit.push({px,py,s});
   });
-  if(hov && !samples.includes(hov)) hov=null;
-  const last=samples[samples.length-1], tipS=hov||(S.rec&&last&&Date.now()-last.t<5000?last:null);
-  if(tipS){
-    const px=X(tipS.x), py=Y(tipS.y);
-    c.strokeStyle='#ffd24a'; c.lineWidth=2; c.beginPath(); c.arc(px,py,7,0,7); c.stroke();
-    const L=tipLines(tipS); c.font='11px ui-monospace,Consolas,monospace';
-    const bw=Math.max(...L.map(t=>c.measureText(t).width))+16, bh=L.length*15+10;
-    let bx=px+12, by=py-bh-8; if(bx+bw>W-4) bx=px-bw-12; if(by<4) by=py+12; if(by+bh>H-4) by=H-bh-4; if(bx<4) bx=4;
-    c.fillStyle='rgba(10,13,16,.92)'; c.strokeStyle='#2a333b'; c.lineWidth=1; c.beginPath(); c.rect(bx,by,bw,bh); c.fill(); c.stroke();
-    L.forEach((t,i)=>{ c.fillStyle=i===0||i===4?'#8f9aa8':'#eef2f6'; c.fillText(t,bx+8,by+17+i*15); });
-  }
+  const lg=$('#legend'); lg.style.display=(S.layer!=='P'&&mx>=mn)?'flex':'none';
+  if(S.layer!=='P'&&mx>=mn){ const u=S.layer==='T'?'°C':'%'; $('#lgMin').textContent=mn.toFixed(S.layer==='T'?1:0)+u; $('#lgMax').textContent=mx.toFixed(S.layer==='T'?1:0)+u; }
   const rx=X(odo.x), ry=Y(odo.y); c.save(); c.translate(rx,ry); c.rotate(-odo.th); c.fillStyle='#ff6a1a'; c.strokeStyle='#07090b'; c.lineWidth=1.5;
   c.beginPath(); c.moveTo(0,-11); c.lineTo(8,9); c.lineTo(0,5); c.lineTo(-8,9); c.closePath(); c.fill(); c.stroke(); c.restore();
 }
-function pick(e){
+mc.addEventListener('pointerup',e=>{
   const r=mc.getBoundingClientRect(), x=e.clientX-r.left, y=e.clientY-r.top;
-  let best=null,bd=18; hit.forEach(h=>{const d=Math.hypot(h.px-x,h.py-y); if(d<bd){bd=d;best=h}});
-  return best&&best.s;
-}
-mc.addEventListener('pointermove',e=>{ if(e.pointerType==='mouse'){ const s=pick(e); if(s!==hov){hov=s;drawMap();} } });
-mc.addEventListener('pointerleave',()=>{ hov=null; drawMap(); });
-mc.addEventListener('pointerup',e=>{ hov=pick(e); drawMap(); });
+  let best=null,bd=22; hit.forEach(h=>{const d=Math.hypot(h.px-x,h.py-y); if(d<bd){bd=d;best=h}});
+  $('#mapInfo').textContent=best?(best.s.label?best.s.label+': ':'')+'T '+f1(best.s.T)+'°C, RH '+(Number.isFinite(best.s.H)?best.s.H:'--')+'%, light '+(Number.isFinite(best.s.L)?best.s.L:'--')+'%  @ ('+best.s.x.toFixed(0)+', '+best.s.y.toFixed(0)+') cm':'Tap a dot to see its values. Forward of the start = up.';
+});
+$$('#layers .chip[data-l]').forEach(b=>b.onclick=()=>{S.layer=b.dataset.l;$$('#layers .chip[data-l]').forEach(x=>x.classList.toggle('on',x===b));drawMap()});
 new ResizeObserver(()=>{if(S.tab==='Map')drawMap()}).observe(mc);
 
 /* ---------------- tabs ---------------- */
