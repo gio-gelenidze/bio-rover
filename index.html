@@ -29,6 +29,13 @@ header{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);min-w
 .hl{display:flex;align-items:center;gap:8px;min-width:0}
 .hr{display:flex;align-items:center;gap:6px;justify-content:flex-end}
 .brand{font-weight:700;letter-spacing:.22em;font-size:11px;color:var(--tx)}
+.bat{display:flex;align-items:center;gap:4px;flex:none;color:var(--tx3)}
+.bat svg{width:24px;height:13px}
+.bat .bo{fill:none;stroke:currentColor;stroke-width:1.4}
+.bat .bn,.bat .bf{fill:currentColor}
+.bat b{font-size:12px;font-weight:700}
+.bat.ok{color:var(--gn)}.bat.mid{color:var(--am)}.bat.low{color:var(--rd)}
+.bat.low b,.bat.low svg{animation:bk 1s steps(1,end) infinite}
 .bt{display:flex;align-items:center;gap:5px;color:var(--tx3);min-width:0}
 .bt svg{width:15px;height:15px;flex:none}
 .bt.on{color:var(--ac)}
@@ -222,6 +229,7 @@ td:first-child,th:first-child{text-align:left}
   <header>
     <div class="hl">
       <span class="brand">BIOME</span>
+      <span class="bat" id="bat" title="AA motor battery"><svg viewBox="0 0 26 14"><rect x="1" y="1" width="21" height="12" rx="2.5" class="bo"/><rect x="23" y="4.5" width="2" height="5" rx="1" class="bn"/><rect x="3" y="3" width="0" height="8" rx="1" id="batFill" class="bf"/></svg><b id="batT">--%</b></span>
       <span class="bt" id="bt"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7l10 10-5 5V2l5 5L7 17"/></svg><span id="status">Not connected</span></span>
     </div>
     <div class="tts">
@@ -492,9 +500,29 @@ function onRx(e){
   while((i=rxBuf.indexOf('\n'))>=0){ const l=rxBuf.slice(0,i).trim(); rxBuf=rxBuf.slice(i+1); parse(l); }
   if(rxBuf.length>200) rxBuf='';
 }
+/* battery: rover sends " B<millivolts>" = 4×AA pack, measured while parked.
+   Alkaline AA resting voltage per cell -> % (rough; NiMH rechargeables read lower). */
+const BAT_CURVE=[[1.58,100],[1.50,85],[1.40,60],[1.30,35],[1.20,15],[1.10,5],[1.00,0]];
+function batPct(mv){
+  const v=mv/4000;
+  if(v>=BAT_CURVE[0][0]) return 100;
+  for(let i=1;i<BAT_CURVE.length;i++){ const [v1,p1]=BAT_CURVE[i-1],[v2,p2]=BAT_CURVE[i];
+    if(v>=v2) return Math.round(p2+(p1-p2)*(v-v2)/(v1-v2)); }
+  return 0;
+}
+let batSm=0;
+function showBattery(mv){
+  batSm=batSm?batSm*0.7+mv*0.3:mv;                         // smooth out jitter
+  const p=batPct(batSm), el=$('#bat');
+  $('#batT').textContent=p+'%'; $('#batFill').setAttribute('width',(17*p/100).toFixed(1));
+  el.className='bat '+(p>40?'ok':p>15?'mid':'low');
+  el.title='AA motor battery: '+(batSm/1000).toFixed(2)+' V ('+p+'%)'+(p<=15?' - replace soon':'');
+  if(!S.batLogged){ S.batLogged=true; log('battery '+(mv/1000).toFixed(2)+' V = '+p+'%'); }
+}
 function parse(l){
+  const bm=/\bB(\d{3,5})\b/.exec(l); if(bm) showBattery(+bm[1]);
   const m=/^T(-?\d+(?:\.\d+)?)\s+H(\d+)\s+L(\d+)/.exec(l);
-  if(!m){ if(l) log('rover says: '+l.slice(0,40)); return; }
+  if(!m){ if(l && !bm) log('rover says: '+l.slice(0,40)); else if(/^ERR/.test(l)) log('rover: DHT11 sensor error'); return; }
   if(!S.lastData) log('first sensor reading received');
   S.T=parseFloat(m[1]); S.H=parseInt(m[2],10); S.L=Math.round(parseInt(m[3],10)/1023*100);
   S.lastData=Date.now();
