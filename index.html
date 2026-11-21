@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <meta name="theme-color" content="#07090b">
 <title>BIOME ROVER</title>
 <style>
@@ -13,18 +13,19 @@
   --num:ui-sans-serif,-apple-system,"SF Pro Display","Segoe UI",Roboto,"Helvetica Neue",sans-serif;
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none;touch-action:manipulation}
-html,body{margin:0;height:100%;background:var(--bg);color:var(--tx);font:12px/1.3 var(--num);overflow:hidden;font-variant-numeric:tabular-nums}
+html,body{margin:0;width:100%;max-width:100%;height:100%;background:var(--bg);color:var(--tx);font:12px/1.3 var(--num);overflow:hidden;overscroll-behavior:none;font-variant-numeric:tabular-nums;-webkit-text-size-adjust:100%;text-size-adjust:100%}
 button,input{font:inherit;color:inherit}
 input{-webkit-user-select:text;user-select:text}
 button{cursor:pointer}
 .lbl{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--tx2);font-weight:600}
 
-#app{display:flex;flex-direction:column;height:100vh;height:100dvh;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+/* no safe-area padding: in some iOS in-app browsers (Bluefy) it shifts the drawing but not the touch targets */
+#app{display:flex;flex-direction:column;width:100%;max-width:100vw;height:100vh;height:100dvh;overflow:hidden}
 #rot{display:none;background:var(--am);color:#1a1100;text-align:center;padding:4px;font-weight:700}
 @media (orientation:portrait){#rot{display:block}}
 
 /* status bar */
-header{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;padding:4px 10px;height:46px;background:var(--s1);border-bottom:1px solid var(--ln)}
+header{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);min-width:0;align-items:center;gap:8px;padding:4px 10px;height:46px;background:var(--s1);border-bottom:1px solid var(--ln)}
 .hl{display:flex;align-items:center;gap:8px;min-width:0}
 .hr{display:flex;align-items:center;gap:6px;justify-content:flex-end}
 .brand{font-weight:700;letter-spacing:.22em;font-size:11px;color:var(--tx)}
@@ -51,7 +52,7 @@ header{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8p
 .sq svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8}
 
 /* main */
-main{flex:1;min-height:0;display:grid;grid-template-columns:minmax(140px,22%) 1fr minmax(140px,24%);gap:8px;padding:8px}
+main{flex:1;min-height:0;min-width:0;display:grid;grid-template-columns:minmax(0,22%) minmax(0,1fr) minmax(0,22%);gap:8px;padding:8px;overflow:hidden}
 .panel{background:var(--s1);border:1px solid var(--ln);border-radius:14px;min-height:0;overflow:hidden}
 
 /* arrow buttons: left panel = ◀ ▶ (+ speed), right panel = ▲ ▼ */
@@ -785,23 +786,47 @@ $$('.seg').forEach(seg=>{
    iOS drops a button "click" when the finger moves a few pixels inside a scrollable area
    (it thinks you started scrolling). Fire the button on finger-lift instead, as long as the
    finger stayed on it and moved less than 14 px; swallow the late native click. */
-let tapS=null, swallow=null;
+/* Forgiving hit area: a finger that lands up to 14 px outside a button (and on nothing else
+   tappable) still counts for the closest button. */
+function nearBtn(x,y){
+  let best=null, bd=14;
+  $$('button,.tile').forEach(b=>{
+    if(b.disabled || b.classList.contains('ak') || b.id==='gBtn' || b.id==='conn' || !b.offsetParent) return;
+    const r=b.getBoundingClientRect(); if(!r.width) return;
+    const dx=Math.max(r.left-x,0,x-r.right), dy=Math.max(r.top-y,0,y-r.bottom), d=Math.hypot(dx,dy);
+    if(d<bd){ bd=d; best=b; }
+  });
+  return best;
+}
+let tapS=null, swallow=0, tapLog=0;
 document.addEventListener('pointerdown',e=>{
   if(e.pointerType==='mouse') return;
-  const b=e.target.closest&&e.target.closest('button,.tile');
-  tapS=(b && !b.disabled && !b.classList.contains('ak'))?{b,id:e.pointerId,x:e.clientX,y:e.clientY}:null;
+  const t=e.target;
+  // Connect buttons keep the browser's own click: Bluetooth pairing needs a genuine user tap
+  if(t.closest && t.closest('input,canvas,.ak,.slides pre,#gBtn,#conn')){ tapS=null; return; }
+  let b=t.closest&&t.closest('button,.tile');
+  if(!b) b=nearBtn(e.clientX,e.clientY);
+  tapS=(b && !b.disabled)?{b,id:e.pointerId,x:e.clientX,y:e.clientY}:null;
+  if(tapLog<12){ tapLog++; const r=b&&b.getBoundingClientRect();
+    log('tap at '+Math.round(e.clientX)+','+Math.round(e.clientY)+(b?' -> '+(b.id||b.textContent.trim().slice(0,12)||b.className)+' ['+Math.round(r.left)+'-'+Math.round(r.right)+']':' -> nothing')); }
 },true);
 document.addEventListener('pointerup',e=>{
   const s=tapS; tapS=null;
   if(!s || e.pointerId!==s.id || Math.hypot(e.clientX-s.x,e.clientY-s.y)>14) return;
-  const over=document.elementFromPoint(e.clientX,e.clientY);
-  if(!over || !s.b.contains(over)) return;
-  swallow={b:s.b,t:Date.now()};
+  swallow=Date.now();
   s.b.dispatchEvent(new MouseEvent('click',{bubbles:true,cancelable:true}));
 },true);
+// drop the browser's own (late, sometimes mis-aimed) click that follows a tap we already handled
 document.addEventListener('click',e=>{
-  if(e.isTrusted && swallow && Date.now()-swallow.t<700 && swallow.b.contains(e.target)){ e.stopPropagation(); e.preventDefault(); swallow=null; }
+  if(e.isTrusted && swallow && Date.now()-swallow<700){ e.stopPropagation(); e.preventDefault(); swallow=0; }
 },true);
+
+/* keep the page pinned: if iOS ever pans or zooms it sideways, taps land off-target */
+function pin(){ if(window.scrollX||window.scrollY) window.scrollTo(0,0); document.documentElement.scrollLeft=0; document.body.scrollLeft=0; }
+['resize','orientationchange','scroll'].forEach(t=>window.addEventListener(t,()=>setTimeout(pin,50),{passive:true}));
+if(window.visualViewport) window.visualViewport.addEventListener('scroll',pin,{passive:true});
+function viewInfo(){ const v=window.visualViewport; log('view '+innerWidth+'x'+innerHeight+' page '+document.documentElement.scrollWidth+'px wide'+(v?' zoom '+v.scale.toFixed(2)+' offset '+Math.round(v.offsetLeft)+','+Math.round(v.offsetTop):'')+' dpr '+devicePixelRatio); }
+setTimeout(viewInfo,500); window.addEventListener('orientationchange',()=>setTimeout(viewInfo,600));
 
 /* ---------------- tabs ---------------- */
 $$('#tabs button').forEach(b=>b.onclick=()=>{
