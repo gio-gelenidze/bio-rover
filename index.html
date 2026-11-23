@@ -422,6 +422,9 @@ const f1=(v,d=1)=>Number.isFinite(v)?v.toFixed(d):'--';
 /* ---------------- state ---------------- */
 const cfg=Object.assign({vMax:30,track:12,turnK:0.6,lcal:[],lfit:null,rs:10000,ld:0,lb:350},store.get('biome_cfg',{}));
 if(!Number.isFinite(cfg.ld)||!Number.isFinite(cfg.lb)){ cfg.ld=0; cfg.lb=350; }
+// auto-calibration from the measured values (dark 0, room ~150-180, flashlight ~350):
+// applied once, replacing any older saved scale; "Set dark/bright" can still fine-tune later
+if(cfg.lsv!==1){ cfg.ld=0; cfg.lb=350; cfg.lsv=1; store.set('biome_cfg',cfg); }
 if(!Array.isArray(cfg.lcal)) cfg.lcal=[];
 
 /* ---------------- light calibration ----------------
