@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#07090b">
 <title>BIOME ROVER</title>
 <style>
@@ -13,19 +13,18 @@
   --num:ui-sans-serif,-apple-system,"SF Pro Display","Segoe UI",Roboto,"Helvetica Neue",sans-serif;
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none;touch-action:manipulation}
-html,body{margin:0;width:100%;max-width:100%;height:100%;background:var(--bg);color:var(--tx);font:12px/1.3 var(--num);overflow:hidden;overscroll-behavior:none;font-variant-numeric:tabular-nums;-webkit-text-size-adjust:100%;text-size-adjust:100%}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--tx);font:12px/1.3 var(--num);overflow:hidden;font-variant-numeric:tabular-nums}
 button,input{font:inherit;color:inherit}
 input{-webkit-user-select:text;user-select:text}
 button{cursor:pointer}
 .lbl{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--tx2);font-weight:600}
 
-/* no safe-area padding: in some iOS in-app browsers (Bluefy) it shifts the drawing but not the touch targets */
-#app{display:flex;flex-direction:column;width:100%;max-width:100vw;height:100vh;height:100dvh;overflow:hidden}
+#app{display:flex;flex-direction:column;height:100vh;height:100dvh;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
 #rot{display:none;background:var(--am);color:#1a1100;text-align:center;padding:4px;font-weight:700}
 @media (orientation:portrait){#rot{display:block}}
 
 /* status bar */
-header{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);min-width:0;align-items:center;gap:8px;padding:4px 10px;height:46px;background:var(--s1);border-bottom:1px solid var(--ln)}
+header{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;padding:4px 10px;height:46px;background:var(--s1);border-bottom:1px solid var(--ln)}
 .hl{display:flex;align-items:center;gap:8px;min-width:0}
 .hr{display:flex;align-items:center;gap:6px;justify-content:flex-end}
 .brand{font-weight:700;letter-spacing:.22em;font-size:11px;color:var(--tx)}
@@ -52,30 +51,17 @@ header{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);min-w
 .sq svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8}
 
 /* main */
-main{flex:1;min-height:0;min-width:0;display:grid;grid-template-columns:minmax(0,22%) minmax(0,1fr) minmax(0,22%);gap:8px;padding:8px;overflow:hidden}
+main{flex:1;min-height:0;display:grid;grid-template-columns:minmax(120px,21%) 1fr minmax(150px,24%);gap:8px;padding:8px}
 .panel{background:var(--s1);border:1px solid var(--ln);border-radius:14px;min-height:0;overflow:hidden}
 
-/* arrow buttons: left panel = ◀ ▶ (+ speed), right panel = ▲ ▼ */
-#left,#right{touch-action:none}
-.arrows{flex:1;min-height:0;display:grid;gap:8px}
-.arrows.lr{grid-template-columns:1fr 1fr}
-.arrows.ud{grid-template-rows:1fr 1fr}
-.ak{border:1px solid var(--ln);background:var(--s2);border-radius:16px;color:var(--tx2);display:flex;align-items:center;justify-content:center;touch-action:none;-webkit-touch-callout:none;min-width:0;min-height:0;padding:0}
-.ak svg{width:46%;max-width:64px;height:46%;max-height:64px;fill:currentColor}
-.ak.on{background:var(--tx);border-color:var(--tx);color:#0b0d10}
+/* wheel */
+#left{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:8px}
+#wheel{width:100%;max-height:calc(100% - 22px);aspect-ratio:1;touch-action:none;cursor:grab}
+#wheelG{transform-origin:100px 100px;transition:transform .25s cubic-bezier(.2,.7,.2,1)}
+#wDeg{font-size:11px;color:var(--tx2);height:16px}
 
-/* speed (top of left panel) */
-#left,#right{display:flex;flex-direction:column;gap:8px;padding:8px}
-.spd{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:6px;flex:none}
-.spd b{font-size:28px;font-weight:600;min-width:1.2ch;text-align:center}
-.sk{height:40px;border:1px solid var(--ln);background:var(--s2);border-radius:12px;font-size:24px;font-weight:600;color:var(--tx)}
-.sk:active{background:var(--s3)}
-.spbar{display:grid;grid-template-columns:repeat(9,1fr);gap:3px}
-.spbar i{height:6px;border-radius:2px;background:var(--ln)}
-.spbar i.on{background:var(--gn)}
-.presets{display:grid;grid-template-columns:repeat(3,1fr);gap:5px}
-.presets .btn{padding:0;height:38px}
-.presets .btn.on{background:var(--tx);border-color:var(--tx);color:#0b0d10}
+/* right: gear + pedals */
+#right{display:flex;flex-direction:column;gap:8px;padding:8px}
 .gears{display:grid;grid-template-columns:repeat(4,1fr);gap:4px}
 .gk{height:40px;border:1px solid var(--ln);background:var(--s2);border-radius:9px;font-weight:700;font-size:15px;color:var(--tx2)}
 .gk.on{background:var(--tx);border-color:var(--tx);color:#0b0d10}
@@ -95,7 +81,6 @@ main{flex:1;min-height:0;min-width:0;display:grid;grid-template-columns:minmax(0
 #center{display:flex;flex-direction:column}
 .pane{display:none;flex:1;min-height:0;overflow:auto;padding:8px}
 .pane.on{display:flex;flex-direction:column;gap:8px}
-#paneFace,#paneData{overflow:hidden;padding:6px;gap:6px}
 .dock{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--ln);background:var(--s1)}
 .dock button{height:40px;border:0;background:transparent;color:var(--tx3);font-weight:700;letter-spacing:.1em;font-size:11px;text-transform:uppercase;position:relative}
 .dock button.on{color:var(--tx)}
@@ -151,35 +136,7 @@ main{flex:1;min-height:0;min-width:0;display:grid;grid-template-columns:minmax(0
 #map{flex:1;min-height:0;width:100%;border-radius:10px;background:#0a0d10;border:1px solid var(--ln)}
 .legend{display:flex;align-items:center;gap:6px;color:var(--tx2);font-size:11px}
 .legend .g{height:5px;width:90px;border-radius:3px;background:linear-gradient(90deg,hsl(240 80% 55%),hsl(180 80% 50%),hsl(120 80% 50%),hsl(60 85% 55%),hsl(0 85% 55%))}
-/* map: canvas fills the pane, info floats on top */
-#paneMap{padding:6px}
-.mapWrap{position:relative;flex:1;min-height:0;display:flex}
-.mapTop{position:absolute;left:8px;top:6px;right:90px;display:flex;align-items:center;gap:8px;pointer-events:none;flex-wrap:wrap}
-#liveNow{font-size:12.5px;font-weight:600;color:var(--tx);background:rgba(10,13,16,.8);padding:2px 7px;border-radius:6px}
-.mapBtn{position:absolute;right:6px;top:6px;height:30px;border:1px solid var(--ln);background:rgba(22,26,31,.92);border-radius:8px;padding:0 10px;font-weight:600;color:var(--tx2);font-size:11.5px}
-#mapInfo{position:absolute;left:8px;bottom:6px;font-size:11px;color:var(--tx3);pointer-events:none}
-
-/* sub-tabs (segmented switch) + swipeable slides */
-.seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;background:var(--s2);border:1px solid var(--ln);border-radius:10px;padding:3px;gap:3px;flex:none}
-.seg button{height:32px;border:0;border-radius:7px;background:transparent;color:var(--tx2);font-weight:700;font-size:12px;letter-spacing:.04em}
-.seg button.on{background:var(--tx);color:#0b0d10}
-.slides{flex:1;min-height:0;display:flex;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;scrollbar-width:none;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain}
-.slides::-webkit-scrollbar{display:none}
-.slide{flex:0 0 100%;min-width:0;scroll-snap-align:start;scroll-snap-stop:always;overflow-y:auto;padding:2px 2px 4px}
-.slide h4{margin:0 0 6px;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--tx2);font-weight:600}
-#paneFace .tiles{grid-template-columns:repeat(auto-fill,minmax(52px,1fr))}
-.drawSlide{display:flex;gap:10px;align-items:flex-start}
-.drawSlide #ed{max-width:none;width:auto;height:100%;max-height:100%;margin:0;flex:none}
-.col{display:flex;flex-direction:column;gap:6px;flex:1;min-width:0}
-.col .btn{height:40px}
-.dt{font-size:13px}
-.dt td,.dt th{padding:5px 6px}
-#blog{margin:0;font:12px/1.4 ui-monospace,Consolas,monospace;color:var(--tx2);white-space:pre-wrap;-webkit-user-select:text;user-select:text}
-.live{display:inline-flex;align-items:center;gap:6px;font-size:10px;letter-spacing:.14em;font-weight:700;color:var(--tx2)}
-.live .dot{width:8px;height:8px;border-radius:50%;background:#4a5560}
-.live.on{color:#ff5a4f}.live.on .dot{background:#ff5a4f;animation:lp 1.2s infinite}
-@keyframes lp{50%{opacity:.25}}
-#liveNow{font-size:11.5px;color:var(--tx)}
+#mapInfo{font-size:11.5px;min-height:15px;color:var(--tx)}
 
 /* face / data */
 .cols{display:grid;grid-template-columns:1.1fr 1fr 1.2fr;gap:8px}
@@ -239,16 +196,19 @@ td:first-child,th:first-child{text-align:left}
 
   <main>
     <section class="panel" id="left">
-      <div class="spd">
-        <button class="sk" id="spDn" aria-label="Slower">−</button>
-        <b id="spV">7</b>
-        <button class="sk" id="spUp" aria-label="Faster">+</button>
-      </div>
-      <div class="spbar" id="spBar"></div>
-      <div class="arrows lr">
-        <button class="ak" data-k="l" aria-label="Left"><svg viewBox="0 0 24 24"><path d="M6 12l11-8v16z"/></svg></button>
-        <button class="ak" data-k="r" aria-label="Right"><svg viewBox="0 0 24 24"><path d="M18 12L7 20V4z"/></svg></button>
-      </div>
+      <svg id="wheel" viewBox="0 0 200 200" role="img" aria-label="Steering wheel">
+        <g id="wheelG">
+          <circle cx="100" cy="100" r="88" fill="none" stroke="#1d2228" stroke-width="18"/>
+          <circle cx="100" cy="100" r="88" fill="none" stroke="#3a424d" stroke-width="1.2" stroke-dasharray="1.2 3.6" transform="rotate(0 100 100)"/>
+          <circle cx="100" cy="100" r="79.5" fill="none" stroke="#2b323b" stroke-width="1"/>
+          <path d="M20 106 Q60 96 80 100 L80 112 Q60 112 22 118 Z" fill="#1d2228"/>
+          <path d="M180 106 Q140 96 120 100 L120 112 Q140 112 178 118 Z" fill="#1d2228"/>
+          <path d="M92 118 H108 L112 178 H88 Z" fill="#1d2228"/>
+          <circle cx="100" cy="102" r="24" fill="#12161b" stroke="#3a424d" stroke-width="1.5"/>
+          <rect x="90" y="6" width="20" height="8" rx="2" fill="#ff6a1a"/>
+        </g>
+      </svg>
+      <div id="wDeg">0&deg;</div>
     </section>
 
     <section class="panel" id="center">
@@ -292,50 +252,53 @@ td:first-child,th:first-child{text-align:left}
         </div>
         <div class="strip">
           <div class="it"><span class="lbl">Humidity</span><b><span id="cH">--</span><i>%</i></b><div class="bar"><span id="bH"></span></div></div>
-          <div class="it"><span class="lbl">Light</span><b><span id="cL">--</span><i>%</i></b><div class="bar"><span id="bL"></span></div></div>
+          <div class="it"><span class="lbl">Light</span><b><span id="cL">--</span><i id="cLu">%</i></b><div class="bar"><span id="bL"></span></div></div>
           <div class="it"><span class="lbl">Heading</span><b><span id="cHd">0</span><i id="cHc">N</i></b></div>
           <div class="it"><span class="lbl">Samples</span><b><span id="cS">0</span><i id="cA"></i></b></div>
         </div>
       </div>
 
       <div class="pane" id="paneMap">
-        <div class="mapWrap">
-          <canvas id="map"></canvas>
-          <div class="mapTop">
-            <span class="live" id="liveTag"><span class="dot"></span>LIVE</span>
-            <span id="liveNow">waiting for sensor data…</span>
-          </div>
-          <button class="mapBtn" id="home" aria-label="Reset origin">⟲ origin</button>
-          <div id="mapInfo">tap a point for its readings</div>
+        <div class="chips" id="layers">
+          <button class="chip on" data-l="P">Path</button>
+          <button class="chip" data-l="T">Temp</button>
+          <button class="chip" data-l="H">Humidity</button>
+          <button class="chip" data-l="L">Light</button>
+          <span class="sp"></span>
+          <span class="legend" id="legend" style="display:none"><span id="lgMin"></span><span class="g"></span><span id="lgMax"></span></span>
+          <button class="chip" id="mark">+ Mark</button>
+          <button class="chip" id="home">Reset origin</button>
         </div>
+        <canvas id="map"></canvas>
+        <div id="mapInfo">Tap a dot to see its values. Forward of the start = up.</div>
       </div>
 
       <div class="pane" id="paneFace">
-        <div class="seg" data-for="face">
-          <button class="on" data-m="0">Faces</button><button data-m="1">Draw</button><button data-m="2">Text</button>
-        </div>
-        <div class="slides" id="faceSlides">
-          <div class="slide">
+        <div class="cols">
+          <div class="box">
+            <h4>Faces</h4>
             <div class="tiles" id="tiles"></div>
-            <div class="lbl" style="margin:6px 0 4px">My faces</div>
+            <h4 style="margin-top:8px">My faces</h4>
             <div class="tiles" id="saved"></div>
-            <div class="row" style="margin-top:6px"><button class="btn" id="faceAuto">Auto face</button></div>
           </div>
-          <div class="slide drawSlide">
+          <div class="box">
+            <h4>Draw on the matrix</h4>
             <canvas id="ed" width="240" height="240"></canvas>
-            <div class="col">
-              <button class="btn pri" id="edSend">Show on rover</button>
+            <div class="row">
+              <button class="btn pri" id="edSend">Show</button>
               <button class="btn" id="edSave">Save</button>
               <button class="btn" id="edInv">Invert</button>
               <button class="btn" id="edClr">Clear</button>
             </div>
           </div>
-          <div class="slide">
+          <div class="box">
+            <h4>Running text</h4>
             <input class="txt" id="txt" maxlength="30" placeholder="Hello!" autocomplete="off">
-            <div class="sl"><div class="row"><span class="lbl">Scroll speed</span><span class="lbl" id="txSpV">5</span></div><input type="range" id="txSp" min="1" max="9" value="5"></div>
+            <div class="sl"><div class="row"><span class="lbl">Speed</span><span class="lbl" id="txSpV">5</span></div><input type="range" id="txSp" min="1" max="9" value="5"></div>
             <div class="row">
               <button class="btn pri" id="txSend">Run</button>
               <button class="btn" id="txStop">Stop</button>
+              <button class="btn" id="faceAuto">Auto face</button>
             </div>
             <div class="note">Letters, digits and symbols only (no Georgian). Up to 30 characters.</div>
           </div>
@@ -343,18 +306,18 @@ td:first-child,th:first-child{text-align:left}
       </div>
 
       <div class="pane" id="paneData">
-        <div class="seg" data-for="data">
-          <button class="on" data-m="0">Samples (<span id="dN">0</span>)</button><button data-m="1">Calibrate</button><button data-m="2">BT log</button>
-        </div>
-        <div class="slides" id="dataSlides">
-          <div class="slide">
-            <table class="dt"><thead><tr><th>#</th><th>time</th><th>&deg;C</th><th>%RH</th><th>light</th><th>x,y cm</th></tr></thead><tbody id="dRows"></tbody></table>
-            <div class="row" style="margin-top:6px">
+        <div class="cols" style="grid-template-columns:1.6fr 1fr">
+          <div class="box">
+            <h4>Recent samples (<span id="dN">0</span>)</h4>
+            <div class="note" style="margin:0 0 6px;color:var(--tx)">Live light: raw <b id="lvR">--</b> &nbsp; <b id="lvP">--</b>% &nbsp; <b id="lvX">--</b> lux</div>
+            <table><thead><tr><th>#</th><th>x</th><th>y</th><th>&deg;C</th><th>%RH</th><th>light%</th><th>raw</th><th>lux</th></tr></thead><tbody id="dRows"></tbody></table>
+            <div class="row" style="margin-top:8px">
               <button class="btn pri" id="csv">Export CSV</button>
               <button class="btn dan" id="clr">Clear data</button>
             </div>
           </div>
-          <div class="slide">
+          <div class="box">
+            <h4>Odometry</h4>
             <div class="set">
               <span>Speed at limit 9 (cm/s)</span><input id="kV" type="number" step="0.5" min="1">
               <span>Wheel track (cm)</span><input id="kW" type="number" step="0.5" min="3">
@@ -365,14 +328,18 @@ td:first-child,th:first-child{text-align:left}
               <button class="btn" id="calT">Test turn 1 s</button>
               <button class="btn" id="odoReset">Reset position</button>
             </div>
+                                    <div class="note" style="margin-top:10px"><b style="color:var(--tx)">Light scale 0-100%</b><br>1) Cover the LDR with your hand, press Set dark. 2) Phone flashlight right on it, press Set bright. Now 0% = dark, 100% = your flashlight.</div>
+            <div class="row" style="margin-top:5px"><button class="btn" id="lsD">Set dark</button><button class="btn" id="lsB">Set bright</button><button class="btn dan" id="lsC">Reset</button></div>
+            <div class="note" id="lsInfo"></div>
+            <div class="note" style="margin-top:10px"><b style="color:var(--tx)">Light calibration (lux, optional)</b><br>1) Type the resistor next to the LDR (measure it). 2) Hold a phone lux-meter app next to the LDR, type its lux, press Add. Use 3-4 places (dark room, room, window, outside).</div>
+            <div class="row" style="margin-top:5px;align-items:center"><span>Resistor &Omega;</span><input id="lcRs" type="number" min="10" step="10" style="width:90px;background:#0a0d10;border:1px solid var(--ln);border-radius:6px;padding:5px 6px"></div>
+            <div class="row" style="margin-top:5px"><input id="lcLux" type="number" min="0" step="1" placeholder="lux" style="width:80px;background:#0a0d10;border:1px solid var(--ln);border-radius:6px;padding:5px 6px"><button class="btn pri" id="lcAdd">Add (now: <span id="lcRaw">--</span>)</button><button class="btn dan" id="lcClr">Clear</button></div>
+            <div class="note" id="lcList">No points yet.</div>
             <div id="calBox" class="note" style="display:none">
               <span id="calMsg"></span>
               <div class="row" style="margin-top:5px"><input id="calIn" type="number" step="0.1" style="width:90px"><button class="btn pri" id="calOk">Apply</button></div>
             </div>
             <div class="note">Distance and position are estimated from motor time (no wheel encoders). Wheels on the ground: run a test, measure the real cm or degrees, enter it, press Apply.</div>
-          </div>
-          <div class="slide">
-            <pre id="blog">(empty)</pre>
           </div>
         </div>
       </div>
@@ -386,9 +353,13 @@ td:first-child,th:first-child{text-align:left}
     </section>
 
     <section class="panel" id="right">
-      <div class="arrows ud">
-        <button class="ak" data-k="u" aria-label="Forward"><svg viewBox="0 0 24 24"><path d="M12 5l8 11H4z"/></svg></button>
-        <button class="ak" data-k="d" aria-label="Back"><svg viewBox="0 0 24 24"><path d="M12 19L4 8h16z"/></svg></button>
+      <div class="gears" id="gears">
+        <button class="gk on" data-g="P">P</button><button class="gk" data-g="R">R</button><button class="gk" data-g="N">N</button><button class="gk" data-g="D">D</button>
+      </div>
+      <div class="lim"><div class="row"><span class="lbl">Speed limit</span><span class="lbl" id="spV">7</span></div><input type="range" id="sp" min="1" max="9" value="7"></div>
+      <div class="pedals">
+        <button class="pedal" id="brake">BRAKE</button>
+        <button class="pedal" id="accel">ACCEL</button>
       </div>
     </section>
   </main>
@@ -407,26 +378,38 @@ const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const f1=(v,d=1)=>Number.isFinite(v)?v.toFixed(d):'--';
 
 /* ---------------- state ---------------- */
-const cfg=Object.assign({vMax:30,track:12,turnK:0.6},store.get('biome_cfg',{}));
+const cfg=Object.assign({vMax:30,track:12,turnK:0.6,lcal:[],lfit:null,rs:10000,ld:null,lb:null},store.get('biome_cfg',{}));
+if(!Number.isFinite(cfg.ld)) cfg.ld=0;
+if(!Number.isFinite(cfg.lb)) cfg.lb=350;
 let samples=store.get('biome_samples',[]);
 let faces=store.get('biome_faces',[]);
 const odo={x:0,y:0,th:0,dist:0,path:[{x:0,y:0}]};
 const S={conn:false,level:7,gear:'P',accel:false,brake:false,wsteer:0,sig:0,hz:false,head:2,rec:false,
-  T:NaN,H:NaN,L:NaN,lastData:0,layer:'P',tab:'Drive',speed:0,cur:null};
+  T:NaN,H:NaN,L:NaN,Lraw:NaN,Lx:NaN,lastData:0,layer:'P',tab:'Drive',speed:0,cur:null};
 const kd=new Set();
-let force=null, lastCmd=null, lastSent=0;
+let force=null, lastCmd=null;
+
+
+function lightPct(raw){
+  if(Number.isFinite(cfg.ld)&&Number.isFinite(cfg.lb)&&cfg.lb>cfg.ld+5) return Math.round(clamp((raw-cfg.ld)/(cfg.lb-cfg.ld),0,1)*100);
+  return Math.round(raw/1023*100);
+}
+function luxOf(raw){
+  const f=cfg.lfit; if(!f||!(raw>=1&&raw<=1022)) return NaN;
+  const R=cfg.rs*(1023-raw)/raw; return Math.pow(10,f.a)*Math.pow(R,f.b);
+}
+function fitLux(){
+  const p=cfg.lcal.filter(c=>c.raw>=1&&c.raw<=1022&&c.lux>0).map(c=>({x:Math.log10(cfg.rs*(1023-c.raw)/c.raw),y:Math.log10(c.lux)}));
+  if(p.length<2){cfg.lfit=null;return;}
+  const n=p.length, mx=p.reduce((a,c)=>a+c.x,0)/n, my=p.reduce((a,c)=>a+c.y,0)/n;
+  let sxx=0,sxy=0; p.forEach(c=>{sxx+=(c.x-mx)**2;sxy+=(c.x-mx)*(c.y-my)});
+  if(sxx<1e-9){cfg.lfit=null;return;}
+  const b=sxy/sxx; cfg.lfit={a:my-b*mx,b};
+}
+function fmtLux(v){ return !Number.isFinite(v)?'--':v>=1000?(v/1000).toFixed(1)+'k':v>=100?Math.round(v)+'':v.toFixed(1); }
 
 /* ---------------- bluetooth ---------------- */
 let device=null, chr=null, rxBuf='', q=Promise.resolve(), busy=0, retry=0;
-/* on-screen Bluetooth log (Data tab) so phone problems are visible */
-const blog=[], t0=Date.now();
-function log(m){
-  const s=((Date.now()-t0)/1000).toFixed(1).padStart(6)+'s  '+m;
-  blog.push(s); if(blog.length>60) blog.shift();
-  const el=document.getElementById('blog'); if(el) el.textContent=blog.slice().reverse().join('\n');
-}
-const emsg=e=>(e&&(e.name?e.name+': ':'')+(e.message||''))||String(e);
-let wMode='auto', nWr=0, nErr=0;   // 'auto' tries write-without-response first, 'r' = write with response
 function setStatus(t,on){$('#status').textContent=t;$('#gStatus').textContent=t;if(on)$('#gate').style.display='none';$('#bt').classList.toggle('on',!!on);S.conn=!!on;$('#conn').textContent=on?'Disconnect':'Connect'}
 if(!navigator.bluetooth) setStatus('No Web Bluetooth here: open in Bluefy',false); else { $('#status').textContent='Ready: tap Connect'; $('#gStatus').textContent='Bluetooth OK. Tap Connect and pick HM-10.'; }
 
@@ -434,12 +417,9 @@ async function attach(dev){
   const srv=await dev.gatt.connect();
   const svc=await srv.getPrimaryService('0000ffe0-0000-1000-8000-00805f9b34fb');
   chr=await svc.getCharacteristic('0000ffe1-0000-1000-8000-00805f9b34fb');
-  const pr=chr.properties||{};
-  log('char FFE1: write='+!!pr.write+' writeNoResp='+!!pr.writeWithoutResponse+' notify='+!!pr.notify);
-  if(pr.write && !pr.writeWithoutResponse) wMode='r';
   await chr.startNotifications();
   chr.addEventListener('characteristicvaluechanged',onRx);
-  retry=0; setStatus('Connected: '+(dev.name||'HM-10'),true); log('connected to '+(dev.name||'?')+', write mode '+wMode);
+  retry=0; setStatus('Connected: '+(dev.name||'HM-10'),true);
   try{ if(navigator.wakeLock) navigator.wakeLock.request('screen').catch(()=>{}); }catch(e){}
   tx(String(S.level)); line('H'+S.head); line('Z'+(S.hz?1:0)); line('Y'+S.sig);
 }
@@ -450,10 +430,9 @@ async function connect(){
     device=await navigator.bluetooth.requestDevice({acceptAllDevices:true,optionalServices:['0000ffe0-0000-1000-8000-00805f9b34fb']});
     device.addEventListener('gattserverdisconnected',onDrop);
     await attach(device);
-  }catch(e){ log('connect failed: '+emsg(e)); setStatus(e&&e.name==='NotFoundError'?'Not connected':'Error: '+(e.message||e),false); }
+  }catch(e){ setStatus(e&&e.name==='NotFoundError'?'Not connected':'Error: '+(e.message||e),false); }
 }
 function onDrop(){
-  log('DISCONNECTED (writes ok '+nWr+', failed '+nErr+', last cmd '+(lastCmd||'-')+')');
   chr=null; setStatus('Connection lost',false);
   if(device && retry<4){ retry++; setTimeout(async()=>{ try{ await attach(device); }catch(e){ onDrop(); } },1500); }
 }
@@ -462,16 +441,7 @@ $('#gBtn').onclick=()=>{ retry=0; connect(); };
 $('#gSkip').onclick=()=>{ $('#gate').style.display='none'; };
 $('#conn').onclick=()=>{ if(S.conn) disconnect(); else { retry=0; connect(); } };
 
-/* Some phones/browsers (Bluefy on iOS) or HM-10 clones reject write-without-response.
-   Try it once; if it fails, switch to normal writes for the rest of the session. */
-async function wr(bytes){
-  const c=chr; if(!c) throw new Error('not connected');
-  if(wMode!=='r' && c.writeValueWithoutResponse){
-    try{ await c.writeValueWithoutResponse(bytes); return; }
-    catch(e){ log('write-no-response failed ('+emsg(e)+') -> using normal write'); wMode='r'; }
-  }
-  if(c.writeValue) await c.writeValue(bytes); else await c.writeValueWithResponse(bytes);
-}
+async function wr(bytes){ if(chr.writeValueWithoutResponse) await chr.writeValueWithoutResponse(bytes); else await chr.writeValue(bytes); }
 function tx(str,droppable){
   if(!chr) return;
   if(droppable && busy>0) return;
@@ -479,11 +449,7 @@ function tx(str,droppable){
   q=q.then(async()=>{
     const b=new TextEncoder().encode(str);
     for(let i=0;i<b.length;i+=20){ await wr(b.slice(i,i+20)); if(i+20<b.length) await sleep(30); }
-    nWr++;
-  }).catch(e=>{
-    nErr++; log('send "'+str.trim()+'" failed: '+emsg(e));
-    $('#status').textContent='Send failed: '+emsg(e);
-  }).then(()=>{busy--});
+  }).catch(()=>{}).then(()=>{busy--});
 }
 function line(s){ tx(s+'\n'); }
 function onRx(e){
@@ -494,44 +460,39 @@ function onRx(e){
 }
 function parse(l){
   const m=/^T(-?\d+(?:\.\d+)?)\s+H(\d+)\s+L(\d+)/.exec(l);
-  if(!m){ if(l) log(/^ERR/.test(l)?'rover: DHT11 sensor error':'rover says: '+l.slice(0,40)); return; }
-  if(!S.lastData) log('first sensor reading received');
-  S.T=parseFloat(m[1]); S.H=parseInt(m[2],10); S.L=Math.round(parseInt(m[3],10)/1023*100);
+  if(!m) return;
+  S.T=parseFloat(m[1]); S.H=parseInt(m[2],10); S.Lraw=parseInt(m[3],10); S.L=lightPct(S.Lraw); S.Lx=luxOf(S.Lraw);
   S.lastData=Date.now();
-  streamSample();
+  if(S.rec) addSample('');
   render();
 }
 
-/* ---------------- arrow buttons (hold to move) ----------------
-   Right thumb: ▲ forward / ▼ back.  Left thumb: ◀ / ▶ steer.
-   ▲ + ◀ = curve left, ▲ alone = straight, ◀ alone = spin in place. Lift = stop. */
-function setGear(g){ S.gear=g; $$('#gearrow span').forEach(s=>s.classList.toggle('on',s.dataset.g===g)); }
-const pad=new Set();
-const akeys=$$('.ak[data-k]');
-function padClear(){ pad.clear(); akeys.forEach(b=>{ b.classList.remove('on'); b._ids&&b._ids.clear(); }); }
-akeys.forEach(el=>{
-  const k=el.dataset.k; el._ids=new Set();
-  el.addEventListener('pointerdown',e=>{ el._ids.add(e.pointerId); try{el.setPointerCapture(e.pointerId)}catch(_){}; pad.add(k); el.classList.add('on'); e.preventDefault(); });
-  const up=e=>{ el._ids.delete(e.pointerId); if(!el._ids.size){ pad.delete(k); el.classList.remove('on'); } };
-  ['pointerup','pointercancel','lostpointercapture'].forEach(t=>el.addEventListener(t,up));
-  el.addEventListener('contextmenu',e=>e.preventDefault());
-  // iOS: a held finger must never turn into a scroll, zoom, magnifier or text selection
-  ['touchstart','touchmove'].forEach(t=>el.addEventListener(t,e=>e.preventDefault(),{passive:false}));
-});
-window.addEventListener('blur',padClear);
-document.addEventListener('visibilitychange',()=>{ if(document.hidden) padClear(); });
+/* ---------------- steering wheel ---------------- */
+const wh=$('#wheel'), wg=$('#wheelG'); let wDrag=false;
+function setWheel(a){ a=clamp(a,-100,100); wg.style.transform='rotate('+a+'deg)'; S.wsteer=a<-18?-1:a>18?1:0; $('#wDeg').textContent=Math.round(a)+'°'; }
+function wMove(e){ const r=wh.getBoundingClientRect(), dx=e.clientX-(r.left+r.width/2), dy=e.clientY-(r.top+r.height/2); setWheel(Math.atan2(dx,-dy)*180/Math.PI); }
+wh.addEventListener('pointerdown',e=>{wDrag=true;wh.setPointerCapture(e.pointerId);wg.style.transition='none';wMove(e);e.preventDefault()});
+wh.addEventListener('pointermove',e=>{if(wDrag)wMove(e)});
+const wEnd=()=>{wDrag=false;wg.style.transition='';setWheel(0)};
+wh.addEventListener('pointerup',wEnd); wh.addEventListener('pointercancel',wEnd);
 
-/* ---------------- speed ---------------- */
-const spBar=$('#spBar'); for(let i=1;i<=9;i++){ const s=document.createElement('i'); spBar.appendChild(s); }
-function setLevel(v){
-  v=clamp(Math.round(v),1,9); S.level=v; $('#spV').textContent=v;
-  [...spBar.children].forEach((s,i)=>s.classList.toggle('on',i<v));
-  $$('.presets .btn').forEach(b=>b.classList.toggle('on',+b.dataset.sp===v));
-  tx(String(v));
+/* ---------------- gears and pedals ---------------- */
+function setGear(g){
+  S.gear=g;
+  $$('#gears .gk').forEach(b=>b.classList.toggle('on',b.dataset.g===g));
+  $$('#gearrow span').forEach(s=>s.classList.toggle('on',s.dataset.g===g));
 }
-$('#spDn').onclick=()=>setLevel(S.level-1);
-$('#spUp').onclick=()=>setLevel(S.level+1);
-$$('.presets .btn').forEach(b=>b.onclick=()=>setLevel(+b.dataset.sp));
+$$('#gears .gk').forEach(b=>b.onclick=()=>setGear(b.dataset.g));
+function pedal(id,on,off){
+  const el=$(id);
+  el.addEventListener('pointerdown',e=>{el.setPointerCapture(e.pointerId);el.classList.add('on');on();e.preventDefault()});
+  const up=()=>{el.classList.remove('on');off()};
+  el.addEventListener('pointerup',up); el.addEventListener('pointercancel',up); el.addEventListener('lostpointercapture',up);
+}
+pedal('#accel',()=>S.accel=true,()=>S.accel=false);
+pedal('#brake',()=>S.brake=true,()=>S.brake=false);
+function setLevel(v){ S.level=v; $('#sp').value=v; $('#spV').textContent=v; tx(String(v)); }
+$('#sp').oninput=e=>setLevel(+e.target.value);
 
 addEventListener('keydown',e=>{
   if(/INPUT|TEXTAREA/.test(e.target.tagName)) return;
@@ -544,13 +505,16 @@ addEventListener('blur',()=>kd.clear());
 
 function wanted(){
   const k=x=>kd.has(x);
-  if(S.brake||k(' ')){ setGear('P'); return 'x'; }
-  const up=pad.has('u')||k('w')||k('arrowup'), dn=pad.has('d')||k('s')||k('arrowdown');
-  const lf=pad.has('l')||k('a')||k('arrowleft'), rt=pad.has('r')||k('d')||k('arrowright');
-  const dir=up&&!dn?1:dn&&!up?-1:0, st=lf&&!rt?-1:rt&&!lf?1:0;
-  setGear(dir>0?'D':dir<0?'R':st?'N':'P');
+  if(S.brake||k(' ')) return 'x';
+  let dir=0;
+  if(S.accel){ if(S.gear==='P'||S.gear==='N') setGear('D'); dir=S.gear==='R'?-1:1; }
+  else if(k('w')||k('arrowup')){ if(S.gear!=='D') setGear('D'); dir=1; }
+  else if(k('s')||k('arrowdown')){ if(S.gear!=='R') setGear('R'); dir=-1; }
+  const st=S.wsteer||((k('a')||k('arrowleft'))?-1:(k('d')||k('arrowright'))?1:0);
+  if(!dir && st && (k('a')||k('d')||k('arrowleft')||k('arrowright')) && S.gear==='P') setGear('D');
   if(dir>0) return st<0?'q':st>0?'e':'w';
   if(dir<0) return st<0?'z':st>0?'c':'s';
+  if(S.gear==='P') return null;
   return st<0?'a':st>0?'d':null;
 }
 
@@ -577,11 +541,9 @@ function tick(){
   const now=performance.now(), dt=Math.min((now-lastTick)/1000,0.5); lastTick=now;
   let cmd=wanted();
   if(force){ if(now<force.until) cmd=force.cmd; else endForce(); }
-  if(cmd!==lastCmd) log('control: '+(cmd||'stop')+(S.conn?'':' (not connected, not sent)'));
   if(S.conn){
-    // send on change, then repeat every 250 ms as keep-alive (firmware stops after 400 ms of silence)
-    if(cmd){ if(cmd!==lastCmd || now-lastSent>250){ tx(cmd,cmd===lastCmd); lastSent=now; } }
-    else if(lastCmd && lastCmd!=='x'){ tx('x'); setTimeout(()=>tx('x'),120); }
+    if(cmd) tx(cmd,true);
+    else if(lastCmd && lastCmd!=='x'){ tx('x'); setTimeout(()=>tx('x'),70); }
   }
   lastCmd=cmd; S.cur=S.conn?cmd:null;
   S.speed=(S.conn && cmd && MUL[cmd])?integrate(MUL[cmd],dt):0;
@@ -619,7 +581,7 @@ const needle=(id,frac)=>{$(id).style.transform='rotate('+(A0+SW*clamp(frac,0,1))
 const CARD=['N','NE','E','SE','S','SW','W','NW'];
 function render(){
   const cmd=S.cur, left=S.hz||S.sig===1||(cmd&&'qza'.includes(cmd)), right=S.hz||S.sig===2||(cmd&&'ecd'.includes(cmd));
-  const dark=Number.isFinite(S.L)&&S.L<12, headLit=S.head===1||(S.head===2&&dark), rev=!!(cmd&&'szc'.includes(cmd));
+  const dark=Number.isFinite(S.Lraw)&&S.Lraw<100, headLit=S.head===1||(S.head===2&&dark), rev=!!(cmd&&'szc'.includes(cmd));
   const T=(id,on)=>$(id).classList.toggle('on',!!on);
   T('#tL',left); T('#tR',right); T('#tHz',S.hz); T('#tHd',headLit);
   $('#tHdT').textContent=S.head===2?'A':S.head===1?'':'OFF'; $('#tHdT').style.display=S.head===1?'none':'';
@@ -631,57 +593,38 @@ function render(){
   $('#sV').textContent=sp.toFixed(0); needle('#ndS',sp/sMax);
   $('#tV').textContent=f1(S.T); needle('#ndT',Number.isFinite(S.T)?(S.T+10)/60:0);
   $('#cH').textContent=Number.isFinite(S.H)?S.H:'--'; $('#bH').style.width=(Number.isFinite(S.H)?S.H:0)+'%';
-  $('#cL').textContent=Number.isFinite(S.L)?S.L:'--'; $('#bL').style.width=(Number.isFinite(S.L)?S.L:0)+'%';
+  const lx=Number.isFinite(S.Lx); $('#cL').textContent=lx?fmtLux(S.Lx):(Number.isFinite(S.L)?S.L:'--'); $('#cLu').textContent=lx?'lux':'%'; $('#bL').style.width=(Number.isFinite(S.L)?S.L:0)+'%';
   const d=odo.dist; $('#trip').textContent=d<100?d.toFixed(0)+' cm':(d/100).toFixed(2)+' m';
   let hd=(-odo.th*180/Math.PI)%360; if(hd<0)hd+=360;
   $('#cHd').textContent=String(Math.round(hd)).padStart(3,'0')+'°'; $('#cHc').textContent=CARD[Math.round(hd/45)%8];
-  $('#cS').textContent=samples.length; $('#cA').textContent=S.lastData?Math.round((Date.now()-S.lastData)/1000)+'s':'';
+  $('#lvR').textContent=Number.isFinite(S.Lraw)?S.Lraw:'--'; $('#lvP').textContent=Number.isFinite(S.L)?S.L:'--'; $('#lvX').textContent=Number.isFinite(S.Lx)?fmtLux(S.Lx):'--'; $('#cS').textContent=samples.length; $('#cA').textContent=S.lastData?Math.round((Date.now()-S.lastData)/1000)+'s':'';
 }
 
 /* ---------------- samples / record ---------------- */
-let persistT=null;
-function persist(now){
-  if(now){ clearTimeout(persistT); persistT=null; store.set('biome_samples',samples); return; }
-  if(!persistT) persistT=setTimeout(()=>{persistT=null; store.set('biome_samples',samples);},2000);
-}
+function persist(){ store.set('biome_samples',samples); }
 function addSample(label){
-  samples.push({t:Date.now(),x:+odo.x.toFixed(1),y:+odo.y.toFixed(1),th:+odo.th.toFixed(3),T:S.T,H:S.H,L:S.L,label:label||''});
-  if(samples.length>20000) samples.splice(0,samples.length-20000);
-  persist(); if(S.tab==='Data') renderData();
+  samples.push({t:Date.now(),x:+odo.x.toFixed(1),y:+odo.y.toFixed(1),th:+odo.th.toFixed(3),T:S.T,H:S.H,L:S.L,R:S.Lraw,X:Number.isFinite(S.Lx)?+S.Lx.toFixed(1):null,label:label||''});
+  persist(); renderData();
 }
-/* every sensor reading is streamed onto the trace; skip exact duplicates
-   (rover parked and values unchanged) so storage doesn't fill up */
-function streamSample(){
-  if(!S.rec) return;
-  const p=samples[samples.length-1];
-  if(p && Math.hypot(odo.x-p.x,odo.y-p.y)<1 && p.T===S.T && p.H===S.H && p.L===S.L && Date.now()-p.t<10000) return;
-  addSample('');
-}
-window.addEventListener('beforeunload',()=>persist(true));
-S.rec=true;
 const rec=$('#rec');
-function renderRec(){
-  rec.classList.toggle('on',S.rec); rec.textContent=S.rec?'LIVE '+samples.length:'PAUSED';
-  const live=S.rec&&S.lastData&&Date.now()-S.lastData<5000;
-  $('#liveTag').classList.toggle('on',!!live);
-  $('#liveNow').textContent=S.lastData?('now: '+f1(S.T)+' °C · RH '+(Number.isFinite(S.H)?S.H:'--')+' % · light '+(Number.isFinite(S.L)?S.L:'--')+' %'+(S.rec?'':' (paused)')):'waiting for sensor data…';
-}
+function renderRec(){ rec.classList.toggle('on',S.rec); rec.textContent=S.rec?'REC '+samples.length:'REC'; }
 rec.onclick=()=>{S.rec=!S.rec;renderRec();};
 setInterval(renderRec,1000);
+$('#mark').onclick=()=>{ const n=prompt('Station name:','Station '+(samples.filter(s=>s.label).length+1)); if(n!==null) addSample(n||'mark'); };
 $('#home').onclick=()=>{ odo.x=odo.y=odo.th=odo.dist=0; odo.path=[{x:0,y:0}]; };
 $('#odoReset').onclick=$('#home').onclick;
 function renderData(){
   $('#dN').textContent=samples.length;
-  $('#dRows').innerHTML=samples.slice(-40).reverse().map((s,i)=>'<tr><td>'+(samples.length-i)+'</td><td>'+new Date(s.t).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',second:'2-digit'})+'</td><td>'+f1(s.T)+'</td><td>'+(Number.isFinite(s.H)?s.H:'--')+'</td><td>'+(Number.isFinite(s.L)?s.L+'%':'--')+'</td><td>'+s.x.toFixed(0)+', '+s.y.toFixed(0)+'</td></tr>').join('')||'<tr><td colspan="6" style="text-align:center;color:var(--tx3)">no readings yet</td></tr>';
+  $('#dRows').innerHTML=samples.slice(-8).reverse().map((s,i)=>'<tr><td>'+(samples.length-i)+(s.label?' '+s.label:'')+'</td><td>'+s.x.toFixed(0)+'</td><td>'+s.y.toFixed(0)+'</td><td>'+f1(s.T)+'</td><td>'+(Number.isFinite(s.H)?s.H:'--')+'</td><td>'+(Number.isFinite(s.L)?s.L:'--')+'</td><td>'+(Number.isFinite(s.R)?s.R:'--')+'</td><td>'+(Number.isFinite(s.X)?s.X:'--')+'</td></tr>').join('');
 }
 $('#csv').onclick=()=>{
   const t0=samples.length?samples[0].t:Date.now();
-  const rows=['time_iso,elapsed_s,x_cm,y_cm,heading_deg,temp_c,humidity_pct,light_pct,label'];
-  samples.forEach(s=>rows.push([new Date(s.t).toISOString(),((s.t-t0)/1000).toFixed(1),s.x,s.y,(-s.th*180/Math.PI).toFixed(1),f1(s.T),Number.isFinite(s.H)?s.H:'',Number.isFinite(s.L)?s.L:'','"'+(s.label||'').replace(/"/g,'""')+'"'].join(',')));
+  const rows=['time_iso,elapsed_s,x_cm,y_cm,heading_deg,temp_c,humidity_pct,light_pct,light_raw,light_lux,label'];
+  samples.forEach(s=>rows.push([new Date(s.t).toISOString(),((s.t-t0)/1000).toFixed(1),s.x,s.y,(-s.th*180/Math.PI).toFixed(1),f1(s.T),Number.isFinite(s.H)?s.H:'',Number.isFinite(s.L)?s.L:'',Number.isFinite(s.R)?s.R:'',Number.isFinite(s.X)?s.X:'','"'+(s.label||'').replace(/"/g,'""')+'"'].join(',')));
   const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([rows.join('\n')],{type:'text/csv'}));
   a.download='biome-rover-'+new Date().toISOString().slice(0,16).replace(/[:T]/g,'-')+'.csv'; document.body.appendChild(a); a.click(); a.remove();
 };
-$('#clr').onclick=()=>{ if(confirm('Delete all '+samples.length+' samples?')){ samples=[]; persist(true); renderData(); } };
+$('#clr').onclick=()=>{ if(confirm('Delete all '+samples.length+' samples?')){ samples=[]; persist(); renderData(); } };
 
 /* ---------------- calibration ---------------- */
 const kV=$('#kV'),kW=$('#kW'),kK=$('#kK');
@@ -710,15 +653,34 @@ $('#calOk').onclick=()=>{
   store.set('biome_cfg',cfg); loadCfg(); calMode=null; $('#calBox').style.display='none';
 };
 
+
+function renderLc(){
+  $('#lcRaw').textContent=Number.isFinite(S.Lraw)?S.Lraw:'--';
+  $('#lcList').textContent=cfg.lcal.length?cfg.lcal.map(c=>c.lux+' lux = '+c.raw).join('  |  ')+(cfg.lfit?'  (calibrated)':'  (need 2+ different)'):'No points yet.';
+}
+$('#lcRs').value=cfg.rs;
+$('#lcRs').onchange=()=>{ const v=parseFloat($('#lcRs').value); if(v>=10){ cfg.rs=v; fitLux(); store.set('biome_cfg',cfg); renderLc(); render(); } };
+$('#lcAdd').onclick=()=>{
+  const v=parseFloat($('#lcLux').value);
+  if(!(v>0)){ alert('Type the lux number from the phone app first.'); return; }
+  if(!(S.Lraw>=1&&S.Lraw<=1022)){ alert('Light reading is at the limit (0 or 1023) or missing. Connect and try again in different light.'); return; }
+  cfg.lcal.push({raw:S.Lraw,lux:v}); fitLux(); store.set('biome_cfg',cfg); $('#lcLux').value=''; renderLc(); render();
+};
+$('#lcClr').onclick=()=>{ cfg.lcal=[]; cfg.lfit=null; store.set('biome_cfg',cfg); renderLc(); render(); };
+setInterval(renderLc,1500);
+
+
+function renderLs(){ $('#lsInfo').textContent='dark = '+(Number.isFinite(cfg.ld)?cfg.ld:'not set')+'  |  bright = '+(Number.isFinite(cfg.lb)?cfg.lb:'not set')+'  |  now raw = '+(Number.isFinite(S.Lraw)?S.Lraw:'--'); }
+function lsSet(k){ if(!Number.isFinite(S.Lraw)){ alert('No light reading yet. Connect first.'); return; } cfg[k]=S.Lraw; store.set('biome_cfg',cfg); S.L=lightPct(S.Lraw); renderLs(); render(); }
+$('#lsD').onclick=()=>lsSet('ld'); $('#lsB').onclick=()=>lsSet('lb');
+$('#lsC').onclick=()=>{ cfg.ld=0; cfg.lb=350; store.set('biome_cfg',cfg); if(Number.isFinite(S.Lraw)) S.L=lightPct(S.Lraw); renderLs(); render(); };
+setInterval(renderLs,1000);
+
 /* ---------------- map ---------------- */
 const mc=$('#map');
-let hit=[], hov=null;
-const fv=v=>Number.isFinite(v)?v:'--';
-function tipLines(s){
-  return [new Date(s.t).toLocaleTimeString(),
-    'Temp      '+f1(s.T)+' °C','Humidity  '+fv(s.H)+' %','Light     '+fv(s.L)+' %',
-    '('+s.x.toFixed(0)+', '+s.y.toFixed(0)+') cm'];
-}
+function col(t){ return 'hsl('+(240-240*clamp(t,0,1))+' 80% 55%)'; }
+function val(s){ return S.layer==='T'?s.T:S.layer==='H'?s.H:(Number.isFinite(s.X)?s.X:s.L); }
+let hit=[];
 function drawMap(){
   const dpr=window.devicePixelRatio||1, W=mc.clientWidth, H=mc.clientHeight; if(!W||!H) return;
   if(mc.width!==Math.round(W*dpr)||mc.height!==Math.round(H*dpr)){ mc.width=Math.round(W*dpr); mc.height=Math.round(H*dpr); }
@@ -734,99 +696,30 @@ function drawMap(){
   for(let gx=Math.floor((cx-W/2/sc)/step)*step; gx<=cx+W/2/sc; gx+=step){ c.moveTo(X(gx),0); c.lineTo(X(gx),H); }
   for(let gy=Math.floor((cy-H/2/sc)/step)*step; gy<=cy+H/2/sc; gy+=step){ c.moveTo(0,Y(gy)); c.lineTo(W,Y(gy)); }
   c.stroke(); c.fillText(step+' cm',6,H-6);
-  c.lineJoin='round'; c.lineCap='round';
-  // live odometry path (where the rover actually drove)
-  c.strokeStyle='rgba(61,160,255,.35)'; c.lineWidth=2; c.beginPath();
+  c.strokeStyle='#3da0ff'; c.lineWidth=3; c.lineJoin='round'; c.lineCap='round'; c.beginPath();
   odo.path.forEach((p,i)=>i?c.lineTo(X(p.x),Y(p.y)):c.moveTo(X(p.x),Y(p.y))); c.stroke();
-  // stored trace through every streamed reading
-  c.strokeStyle='#3da0ff'; c.lineWidth=3; c.beginPath();
-  samples.forEach((s,i)=>i?c.lineTo(X(s.x),Y(s.y)):c.moveTo(X(s.x),Y(s.y))); c.stroke();
   c.fillStyle='#eef2f6'; c.beginPath(); c.arc(X(0),Y(0),4,0,7); c.fill(); c.fillStyle='#8f9aa8'; c.fillText('start',X(0)+7,Y(0)-6);
-  // reading points (thinned on screen when they overlap; all are kept in storage)
-  hit=[]; let lx=-1e9, ly=-1e9;
-  c.fillStyle='#eef2f6'; c.strokeStyle='#0a0d10'; c.lineWidth=1.5;
-  samples.forEach((s,i)=>{
-    const px=X(s.x), py=Y(s.y), last=i===samples.length-1;
-    if(!last && Math.hypot(px-lx,py-ly)<6) return;
-    lx=px; ly=py; c.beginPath(); c.arc(px,py,3.5,0,7); c.fill(); c.stroke(); hit.push({px,py,s});
+  hit=[]; let mn=Infinity,mx=-Infinity;
+  if(S.layer!=='P') samples.forEach(s=>{const v=val(s); if(Number.isFinite(v)){mn=Math.min(mn,v);mx=Math.max(mx,v)}});
+  samples.forEach(s=>{
+    const px=X(s.x), py=Y(s.y); let fill='#eef2f6';
+    if(S.layer!=='P'){ const v=val(s); fill=Number.isFinite(v)?col(mx>mn?(v-mn)/(mx-mn):.5):'#555'; }
+    c.fillStyle=fill; c.strokeStyle='#0a0d10'; c.lineWidth=1.5; c.beginPath(); c.arc(px,py,s.label?7:5,0,7); c.fill(); c.stroke();
+    if(s.label){ c.fillStyle='#eef2f6'; c.font='11px system-ui'; c.fillText(s.label,px+9,py-7); }
+    hit.push({px,py,s});
   });
-  if(hov && !samples.includes(hov)) hov=null;
-  const last=samples[samples.length-1], tipS=hov||(S.rec&&last&&Date.now()-last.t<5000?last:null);
-  if(tipS){
-    const px=X(tipS.x), py=Y(tipS.y);
-    c.strokeStyle='#ffd24a'; c.lineWidth=2; c.beginPath(); c.arc(px,py,7,0,7); c.stroke();
-    const L=tipLines(tipS); c.font='13px ui-monospace,Consolas,monospace';
-    const bw=Math.max(...L.map(t=>c.measureText(t).width))+16, bh=L.length*17+10;
-    let bx=px+12, by=py-bh-8; if(bx+bw>W-4) bx=px-bw-12; if(by<4) by=py+12; if(by+bh>H-4) by=H-bh-4; if(bx<4) bx=4;
-    c.fillStyle='rgba(10,13,16,.92)'; c.strokeStyle='#2a333b'; c.lineWidth=1; c.beginPath(); c.rect(bx,by,bw,bh); c.fill(); c.stroke();
-    L.forEach((t,i)=>{ c.fillStyle=i===0||i===4?'#8f9aa8':'#eef2f6'; c.fillText(t,bx+8,by+19+i*17); });
-  }
+  const lg=$('#legend'); lg.style.display=(S.layer!=='P'&&mx>=mn)?'flex':'none';
+  if(S.layer!=='P'&&mx>=mn){ const u=S.layer==='T'?'°C':(S.layer==='L'&&samples.some(q=>Number.isFinite(q.X))?' lux':'%'); $('#lgMin').textContent=mn.toFixed(S.layer==='T'||u===' lux'?1:0)+u; $('#lgMax').textContent=mx.toFixed(S.layer==='T'||u===' lux'?1:0)+u; }
   const rx=X(odo.x), ry=Y(odo.y); c.save(); c.translate(rx,ry); c.rotate(-odo.th); c.fillStyle='#ff6a1a'; c.strokeStyle='#07090b'; c.lineWidth=1.5;
   c.beginPath(); c.moveTo(0,-11); c.lineTo(8,9); c.lineTo(0,5); c.lineTo(-8,9); c.closePath(); c.fill(); c.stroke(); c.restore();
 }
-function pick(e){
+mc.addEventListener('pointerup',e=>{
   const r=mc.getBoundingClientRect(), x=e.clientX-r.left, y=e.clientY-r.top;
-  let best=null,bd=18; hit.forEach(h=>{const d=Math.hypot(h.px-x,h.py-y); if(d<bd){bd=d;best=h}});
-  return best&&best.s;
-}
-mc.addEventListener('pointermove',e=>{ if(e.pointerType==='mouse'){ const s=pick(e); if(s!==hov){hov=s;drawMap();} } });
-mc.addEventListener('pointerleave',()=>{ hov=null; drawMap(); });
-mc.addEventListener('pointerup',e=>{ hov=pick(e); drawMap(); });
-new ResizeObserver(()=>{if(S.tab==='Map')drawMap()}).observe(mc);
-
-/* ---------------- sub-tabs: tap the switch or swipe sideways ---------------- */
-$$('.seg').forEach(seg=>{
-  const sl=seg.nextElementSibling, btns=[...seg.querySelectorAll('button')];
-  const mark=i=>btns.forEach((b,j)=>b.classList.toggle('on',j===i));
-  btns.forEach((b,i)=>b.onclick=()=>{ sl.scrollTo({left:i*sl.clientWidth,behavior:'smooth'}); mark(i); });
-  let st=null; sl.addEventListener('scroll',()=>{ clearTimeout(st); st=setTimeout(()=>mark(Math.round(sl.scrollLeft/Math.max(1,sl.clientWidth))),60); });
+  let best=null,bd=22; hit.forEach(h=>{const d=Math.hypot(h.px-x,h.py-y); if(d<bd){bd=d;best=h}});
+  $('#mapInfo').textContent=best?(best.s.label?best.s.label+': ':'')+'T '+f1(best.s.T)+'°C, RH '+(Number.isFinite(best.s.H)?best.s.H:'--')+'%, light '+(Number.isFinite(best.s.L)?best.s.L:'--')+'%  @ ('+best.s.x.toFixed(0)+', '+best.s.y.toFixed(0)+') cm':'Tap a dot to see its values. Forward of the start = up.';
 });
-
-/* ---------------- reliable taps on iPhone ----------------
-   iOS drops a button "click" when the finger moves a few pixels inside a scrollable area
-   (it thinks you started scrolling). Fire the button on finger-lift instead, as long as the
-   finger stayed on it and moved less than 14 px; swallow the late native click. */
-/* Forgiving hit area: a finger that lands up to 14 px outside a button (and on nothing else
-   tappable) still counts for the closest button. */
-function nearBtn(x,y){
-  let best=null, bd=14;
-  $$('button,.tile').forEach(b=>{
-    if(b.disabled || b.classList.contains('ak') || b.id==='gBtn' || b.id==='conn' || !b.offsetParent) return;
-    const r=b.getBoundingClientRect(); if(!r.width) return;
-    const dx=Math.max(r.left-x,0,x-r.right), dy=Math.max(r.top-y,0,y-r.bottom), d=Math.hypot(dx,dy);
-    if(d<bd){ bd=d; best=b; }
-  });
-  return best;
-}
-let tapS=null, swallow=0, tapLog=0;
-document.addEventListener('pointerdown',e=>{
-  if(e.pointerType==='mouse') return;
-  const t=e.target;
-  // Connect buttons keep the browser's own click: Bluetooth pairing needs a genuine user tap
-  if(t.closest && t.closest('input,canvas,.ak,.slides pre,#gBtn,#conn')){ tapS=null; return; }
-  let b=t.closest&&t.closest('button,.tile');
-  if(!b) b=nearBtn(e.clientX,e.clientY);
-  tapS=(b && !b.disabled)?{b,id:e.pointerId,x:e.clientX,y:e.clientY}:null;
-  if(tapLog<12){ tapLog++; const r=b&&b.getBoundingClientRect();
-    log('tap at '+Math.round(e.clientX)+','+Math.round(e.clientY)+(b?' -> '+(b.id||b.textContent.trim().slice(0,12)||b.className)+' ['+Math.round(r.left)+'-'+Math.round(r.right)+']':' -> nothing')); }
-},true);
-document.addEventListener('pointerup',e=>{
-  const s=tapS; tapS=null;
-  if(!s || e.pointerId!==s.id || Math.hypot(e.clientX-s.x,e.clientY-s.y)>14) return;
-  swallow=Date.now();
-  s.b.dispatchEvent(new MouseEvent('click',{bubbles:true,cancelable:true}));
-},true);
-// drop the browser's own (late, sometimes mis-aimed) click that follows a tap we already handled
-document.addEventListener('click',e=>{
-  if(e.isTrusted && swallow && Date.now()-swallow<700){ e.stopPropagation(); e.preventDefault(); swallow=0; }
-},true);
-
-/* keep the page pinned: if iOS ever pans or zooms it sideways, taps land off-target */
-function pin(){ if(window.scrollX||window.scrollY) window.scrollTo(0,0); document.documentElement.scrollLeft=0; document.body.scrollLeft=0; }
-['resize','orientationchange','scroll'].forEach(t=>window.addEventListener(t,()=>setTimeout(pin,50),{passive:true}));
-if(window.visualViewport) window.visualViewport.addEventListener('scroll',pin,{passive:true});
-function viewInfo(){ const v=window.visualViewport; log('view '+innerWidth+'x'+innerHeight+' page '+document.documentElement.scrollWidth+'px wide'+(v?' zoom '+v.scale.toFixed(2)+' offset '+Math.round(v.offsetLeft)+','+Math.round(v.offsetTop):'')+' dpr '+devicePixelRatio); }
-setTimeout(viewInfo,500); window.addEventListener('orientationchange',()=>setTimeout(viewInfo,600));
+$$('#layers .chip[data-l]').forEach(b=>b.onclick=()=>{S.layer=b.dataset.l;$$('#layers .chip[data-l]').forEach(x=>x.classList.toggle('on',x===b));drawMap()});
+new ResizeObserver(()=>{if(S.tab==='Map')drawMap()}).observe(mc);
 
 /* ---------------- tabs ---------------- */
 $$('#tabs button').forEach(b=>b.onclick=()=>{
@@ -888,7 +781,7 @@ $('#fs').onclick=async()=>{
 };
 
 /* ---------------- init ---------------- */
-loadCfg(); setGear('P'); setLevel(S.level); render(); renderRec(); renderData(); buildFaces(); paint($('#ed'),ed);
+fitLux(); loadCfg(); renderLc(); renderLs(); setGear('P'); render(); renderRec(); renderData(); buildFaces(); paint($('#ed'),ed);
 })();
 </script>
 </body>
